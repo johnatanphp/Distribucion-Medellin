@@ -378,15 +378,38 @@ function LoginPage({ onLogin }) {
   const [password,setPassword] = useState("");
   const [name,setName] = useState("");
   const [err,setErr] = useState("");
+  const [loading,setLoading] = useState(false);
   const dbRef = useRef(DB);
 
-  const submit = () => {
+  const submit = async () => {
     setErr("");
     if(tab==="login"){
-      const user = dbRef.current.users.find(u=>u.email===email&&u.password===password);
-      if(!user) return setErr("Credenciales incorrectas");
-      if(!user.active) return setErr("Cuenta desactivada. Contacta al administrador.");
-      onLogin(user);
+      setLoading(true);
+      try {
+        const res = await fetch("/api/auth/login", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:email.toLowerCase().trim(),password}),
+        });
+        const data = await res.json();
+        if(!res.ok) return setErr(data.message||"Credenciales incorrectas");
+        localStorage.setItem("distrimed_token", data.token);
+        const realUser = data.user;
+        // Map real API user to app-compatible mock user for rich dashboard data
+        let appUser = dbRef.current.users.find(u=>u.email===realUser.email);
+        if(!appUser) {
+          // New user not in mock DB — create a compatible entry
+          const role = realUser.role==="customer"?"client":realUser.role;
+          appUser = {id:genId(),name:realUser.name,email:realUser.email,password:"",role,active:true,createdAt:realUser.createdAt||new Date().toISOString().slice(0,10)};
+          if(realUser.storeId) appUser.storeId = realUser.role==="store"?"s1":undefined;
+          DB.users.push(appUser);
+        }
+        onLogin(appUser);
+      } catch(e) {
+        setErr("Error de conexión con el servidor");
+      } finally {
+        setLoading(false);
+      }
     } else {
       if(!name||!email||!password) return setErr("Completa todos los campos");
       if(password.length<6) return setErr("La contraseña debe tener al menos 6 caracteres");
@@ -447,8 +470,8 @@ function LoginPage({ onLogin }) {
           <input type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)} onKeyPress={kp}/>
         </div>
 
-        <button className="btn btn-cy w-full" style={{fontSize:"1rem",padding:"12px"}} onClick={submit}>
-          {tab==="login"?"🚀 Entrar":"✨ Crear cuenta"}
+        <button className="btn btn-cy w-full" style={{fontSize:"1rem",padding:"12px"}} onClick={submit} disabled={loading}>
+          {loading?"⏳ Verificando...":tab==="login"?"🚀 Entrar":"✨ Crear cuenta"}
         </button>
       </div>
     </div>
