@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface Rating {
+  id: number;
+  productId: number;
+  userId: number;
+  stars: number;
+  comment?: string | null;
+  createdAt: string;
 }

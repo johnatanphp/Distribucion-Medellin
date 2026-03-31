@@ -1,0 +1,1767 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+
+/* ─── DESIGN TOKENS + CSS ─── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050c1a;--bg1:#080f1e;--bg2:#0c1628;--bg3:#101d32;--bg4:#15243c;
+  --bd:#1a2d47;--bd2:#253c5a;
+  --cy:#00e5ff;--cy10:rgba(0,229,255,.1);--cy20:rgba(0,229,255,.2);
+  --or:#ff6030;--or10:rgba(255,96,48,.1);
+  --gr:#00d68f;--gr10:rgba(0,214,143,.1);
+  --ye:#ffb700;--re:#ff3355;--re10:rgba(255,51,85,.1);
+  --pu:#a855f7;--pu10:rgba(168,85,247,.1);
+  --t0:#e8f0fe;--t1:#8ba0be;--t2:#445870;
+  --r:10px;--rl:16px;--rxl:22px;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+  --mono:'DM Mono',monospace;
+}
+html,body{height:100%;font-family:var(--body);background:var(--bg);color:var(--t0);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--body);border:none}
+input,select,textarea{font-family:var(--body);background:var(--bg3);border:1px solid var(--bd);color:var(--t0);border-radius:var(--r);padding:10px 14px;font-size:.9rem;outline:none;width:100%;transition:border-color .18s,box-shadow .18s}
+input::placeholder,textarea::placeholder{color:var(--t2)}
+input:focus,select:focus,textarea:focus{border-color:var(--cy);box-shadow:0 0 0 3px var(--cy10)}
+select option{background:var(--bg2)}
+label{display:block;font-size:.72rem;font-weight:700;color:var(--t1);margin-bottom:5px;text-transform:uppercase;letter-spacing:.07em;font-family:var(--cond)}
+
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:230px;background:var(--bg1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:transform .28s;z-index:200}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;background:var(--bg1);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:24px}
+
+.logo-area{padding:18px 16px 12px;border-bottom:1px solid var(--bd)}
+.logo{font-family:var(--cond);font-size:1.6rem;font-weight:900;color:var(--cy);letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+.logo-sub{font-size:.65rem;color:var(--t2);text-transform:uppercase;letter-spacing:.1em;margin-top:1px}
+.nav-area{padding:10px 8px;flex:1;overflow-y:auto}
+.nav-sec-lbl{font-size:.62rem;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.12em;padding:10px 10px 4px;font-family:var(--cond)}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:.875rem;font-weight:500;color:var(--t1);cursor:pointer;transition:all .16s;margin:1px 0;background:none;width:100%;text-align:left}
+.nav-btn:hover{background:var(--bg3);color:var(--t0)}
+.nav-btn.on{background:var(--cy10);color:var(--cy);font-weight:600}
+.nav-ico{width:20px;text-align:center;font-size:1rem;flex-shrink:0}
+.sidebar-foot{margin-top:auto;padding:12px 8px;border-top:1px solid var(--bd)}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r)}
+.user-chip .nm{font-size:.82rem;font-weight:600;font-family:var(--cond)}
+.user-chip .rl{font-size:.68rem;color:var(--t2)}
+
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--cond);font-size:.75rem;font-weight:800;flex-shrink:0}
+.av-cy{background:var(--cy10);border:1px solid var(--cy20);color:var(--cy)}
+.av-or{background:var(--or10);border:1px solid rgba(255,96,48,.3);color:var(--or)}
+.av-gr{background:var(--gr10);border:1px solid rgba(0,214,143,.3);color:var(--gr)}
+.av-pu{background:var(--pu10);border:1px solid rgba(168,85,247,.3);color:var(--pu)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 18px;border-radius:var(--r);font-family:var(--cond);font-weight:700;font-size:.9rem;letter-spacing:.04em;transition:all .18s;white-space:nowrap}
+.btn-cy{background:var(--cy);color:#000}.btn-cy:hover{background:#33ecff;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,229,255,.3)}
+.btn-sec{background:var(--bg3);color:var(--t0);border:1px solid var(--bd)}.btn-sec:hover{border-color:var(--cy);color:var(--cy)}
+.btn-re{background:var(--re10);color:var(--re);border:1px solid rgba(255,51,85,.25)}.btn-re:hover{background:rgba(255,51,85,.2)}
+.btn-gr{background:var(--gr10);color:var(--gr);border:1px solid rgba(0,214,143,.25)}.btn-gr:hover{background:rgba(0,214,143,.15)}
+.btn-or{background:var(--or);color:#fff}.btn-or:hover{background:#ff7a52;transform:translateY(-1px)}
+.btn-pu{background:var(--pu10);color:var(--pu);border:1px solid rgba(168,85,247,.25)}.btn-pu:hover{background:rgba(168,85,247,.2)}
+.btn-sm{padding:6px 13px;font-size:.8rem}.btn-xs{padding:4px 9px;font-size:.72rem}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.ico-btn{padding:7px;border-radius:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--t1)}.ico-btn:hover{border-color:var(--cy);color:var(--cy)}
+
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rl);padding:20px;transition:border-color .2s}
+.card:hover{border-color:var(--bd2)}.card-glow{border-color:var(--cy)!important;box-shadow:0 0 28px rgba(0,229,255,.12)}
+.card-or{border-color:rgba(255,96,48,.3)!important}.card-pu{border-color:rgba(168,85,247,.3)!important}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px}
+.stat{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rl);padding:16px 18px}
+.stat-ico{font-size:1.3rem;margin-bottom:8px}
+.stat-val{font-family:var(--cond);font-size:1.9rem;font-weight:900;line-height:1}
+.stat-lbl{font-size:.68rem;color:var(--t2);text-transform:uppercase;letter-spacing:.09em;margin-top:4px;font-family:var(--cond)}
+.stat-sub{font-size:.75rem;color:var(--t1);margin-top:5px}
+
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.prod-card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden;cursor:pointer;transition:all .22s;display:flex;flex-direction:column;position:relative}
+.prod-card:hover{border-color:var(--cy);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.prod-thumb{height:160px;display:flex;align-items:center;justify-content:center;font-size:5rem;background:linear-gradient(135deg,var(--bg3) 0%,var(--bg4) 100%);position:relative;overflow:hidden}
+.prod-thumb::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,var(--bg2) 0%,transparent 60%)}
+.prod-body{padding:14px;flex:1;display:flex;flex-direction:column;gap:5px}
+.prod-name{font-family:var(--cond);font-size:1rem;font-weight:800;line-height:1.2}
+.prod-cat{font-size:.7rem;color:var(--t2);text-transform:uppercase;letter-spacing:.06em}
+.prod-brand{font-size:.75rem;color:var(--t1)}
+.prod-price{font-family:var(--mono);color:var(--cy);font-size:1rem;margin-top:auto;padding-top:8px}
+.prod-store{font-size:.7rem;color:var(--t2)}
+.prod-foot{display:flex;justify-content:space-between;align-items:center;padding:0 14px 14px}
+.prod-badge{position:absolute;top:10px;left:10px;z-index:2}
+.prod-badge-sale{position:absolute;top:10px;right:10px;z-index:2}
+
+.stars{display:flex;gap:2px}
+.star{font-size:.85rem;cursor:pointer;transition:transform .1s;line-height:1;color:var(--t2)}.star:hover{transform:scale(1.2)}.star.on{color:var(--ye)}
+
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.68rem;font-weight:800;font-family:var(--cond);letter-spacing:.04em}
+.b-ok{background:var(--gr10);color:var(--gr)}.b-off{background:var(--re10);color:var(--re)}.b-warn{background:rgba(255,183,0,.12);color:var(--ye)}.b-cy{background:var(--cy10);color:var(--cy)}.b-pu{background:var(--pu10);color:var(--pu)}.b-or{background:var(--or10);color:var(--or)}
+
+.tbl-wrap{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--bd)}
+table{width:100%;border-collapse:collapse;font-size:.875rem}
+th{padding:10px 14px;text-align:left;color:var(--t2);font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid var(--bd);font-family:var(--cond);font-weight:800;background:var(--bg1)}
+td{padding:13px 14px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+
+.sec-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.sec-ttl{font-family:var(--cond);font-size:1.25rem;font-weight:800}
+
+.overlay{position:fixed;inset:0;background:rgba(5,12,26,.9);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;backdrop-filter:blur(8px);animation:fadein .18s}
+.modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--rxl);padding:26px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;animation:slideup .22s}
+.modal-lg{max-width:720px}
+.modal-ttl{font-family:var(--cond);font-size:1.2rem;font-weight:800;margin-bottom:18px}
+
+.alert{padding:10px 14px;border-radius:var(--r);font-size:.875rem;margin-bottom:12px}
+.al-err{background:var(--re10);border:1px solid rgba(255,51,85,.25);color:#ff8fa3}
+.al-ok{background:var(--gr10);border:1px solid rgba(0,214,143,.25);color:#6ee7b7}
+.al-warn{background:rgba(255,183,0,.1);border:1px solid rgba(255,183,0,.25);color:#fcd34d}
+.al-cy{background:var(--cy10);border:1px solid rgba(0,229,255,.25);color:#67e8f9}
+
+.tabs{display:flex;background:var(--bg3);border-radius:var(--r);padding:3px;gap:3px;margin-bottom:18px;flex-wrap:wrap}
+.tab{flex:1;text-align:center;padding:7px 10px;border-radius:8px;font-family:var(--cond);font-size:.85rem;font-weight:700;color:var(--t2);cursor:pointer;border:none;background:none;transition:all .16s;white-space:nowrap}
+.tab.on{background:var(--bg2);color:var(--cy)}
+
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+.filters input,.filters select{width:auto;flex:1;min-width:120px;max-width:220px}
+.filter-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:.76rem;font-weight:600;font-family:var(--cond);border:1px solid var(--bd);background:var(--bg3);color:var(--t1);cursor:pointer;transition:all .16s;white-space:nowrap}
+.filter-chip.on{border-color:var(--cy);color:var(--cy);background:var(--cy10)}
+
+.map-wrap{border-radius:var(--rl);overflow:hidden;border:1px solid var(--bd)}
+.map-placeholder{background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--t2);font-size:1rem;position:relative;overflow:hidden}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(var(--bd) 1px,transparent 1px),linear-gradient(90deg,var(--bd) 1px,transparent 1px);background-size:30px 30px;opacity:.5}
+@keyframes ring{0%{transform:scale(.5);opacity:1}100%{transform:scale(2.2);opacity:0}}
+
+.login-pg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
+.login-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 15% 60%,rgba(0,229,255,.07) 0%,transparent 70%),radial-gradient(ellipse 50% 40% at 85% 30%,rgba(255,96,48,.04) 0%,transparent 70%)}
+.login-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(26,45,71,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(26,45,71,.3) 1px,transparent 1px);background-size:40px 40px}
+.login-card{width:100%;max-width:420px;background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--rxl);padding:36px;position:relative;z-index:1;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.login-logo{font-family:var(--cond);font-size:2rem;font-weight:900;color:var(--cy);letter-spacing:.06em;margin-bottom:2px}
+.login-sub{color:var(--t2);font-size:.8rem;margin-bottom:24px}
+.demo-box{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:10px 13px;margin-bottom:18px;font-size:.76rem;color:var(--t1)}
+.demo-box b{color:var(--cy);font-family:var(--mono)}
+
+.store-card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rl);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .18s;margin-bottom:8px}
+.store-card:hover{border-color:var(--bd2)}.store-card.sel{border-color:var(--cy);background:var(--bg3)}
+.s-emoji{font-size:1.8rem;flex-shrink:0}.s-info{flex:1;min-width:0}
+.s-name{font-family:var(--cond);font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-addr{font-size:.72rem;color:var(--t2)}.s-dist{font-family:var(--mono);font-size:.72rem;color:var(--cy);flex-shrink:0}
+
+.store-hero{border-radius:var(--rl);overflow:hidden;margin-bottom:20px;position:relative}
+.store-hero-bg{height:160px;display:flex;align-items:center;justify-content:center;font-size:6rem;position:relative}
+.store-hours-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.hours-chip{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:8px 12px;font-size:.75rem}
+.hours-day{font-family:var(--cond);font-weight:700;font-size:.8rem;margin-bottom:2px}
+.hours-time{color:var(--cy);font-family:var(--mono);font-size:.72rem}
+.hours-closed{color:var(--re);font-family:var(--mono);font-size:.72rem}
+
+.subdomain-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:var(--pu10);border:1px solid rgba(168,85,247,.3);border-radius:20px;font-family:var(--mono);font-size:.72rem;color:var(--pu)}
+
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.divider{height:1px;background:var(--bd);margin:14px 0}
+
+.section-divider{display:flex;align-items:center;gap:12px;margin:20px 0}
+.section-divider span{font-family:var(--cond);font-size:.72rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+.empty{text-align:center;padding:50px 20px;color:var(--t2);display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty-ico{font-size:3rem}.empty-ttl{font-family:var(--cond);font-size:1rem;color:var(--t1);font-weight:700}
+
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes slideup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse2{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .7s linear infinite;display:inline-block}
+
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:80px;padding:0 4px}
+.chart-bar{flex:1;border-radius:4px 4px 0 0;transition:height .4s,background .2s;min-width:10px;cursor:pointer}.chart-bar:hover{filter:brightness(1.25)}
+.chart-labels{display:flex;gap:6px;padding:4px 4px 0}
+.chart-label{flex:1;text-align:center;font-size:.6rem;color:var(--t2);font-family:var(--mono)}
+
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg1)}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+
+@media(max-width:900px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .content{padding:14px 14px 70px}
+  .fg-row{grid-template-columns:1fr}.fg-row-3{grid-template-columns:1fr 1fr}
+  .filters input,.filters select{max-width:100%;width:100%}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .prod-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
+}
+.mob-bg{display:none;position:fixed;inset:0;background:rgba(5,12,26,.75);z-index:199}
+.mob-bg.show{display:block}
+.burger{display:none;padding:8px;background:none;border:none;color:var(--t0);font-size:1.3rem;cursor:pointer}
+@media(max-width:900px){.burger{display:flex}}
+.topbar-ttl{font-family:var(--cond);font-size:1.1rem;font-weight:800;flex:1}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:.7rem;background:var(--bg3);color:var(--t1);border:1px solid var(--bd)}
+.mono{font-family:var(--mono)}
+.text-cy{color:var(--cy)}.text-gr{color:var(--gr)}.text-re{color:var(--re)}.text-ye{color:var(--ye)}.text-pu{color:var(--pu)}.text-or{color:var(--or)}.text-muted{color:var(--t2)}.text-sm{font-size:.82rem}.text-xs{font-size:.72rem}
+.fw8{font-weight:800}
+.flex{display:flex}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.flex-col{flex-direction:column}
+.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.w-full{width:100%}
+.order-status-bar{display:flex;gap:0;margin:10px 0}
+.os-step{flex:1;height:4px;background:var(--bg4);border-radius:2px;margin:0 2px;transition:background .3s}.os-step.done{background:var(--cy)}
+.feed-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:.82rem}.feed-item:last-child{border-bottom:none}
+.feed-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;inset:0;background:var(--bg4);border-radius:22px;cursor:pointer;border:1px solid var(--bd);transition:.2s}
+.toggle-slider:before{content:'';position:absolute;height:16px;width:16px;left:2px;bottom:2px;background:var(--t2);border-radius:50%;transition:.2s}
+.toggle input:checked + .toggle-slider{background:var(--cy10);border-color:var(--cy)}
+.toggle input:checked + .toggle-slider:before{transform:translateX(18px);background:var(--cy)}
+.color-swatch{width:24px;height:24px;border-radius:6px;border:2px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0}
+.color-swatch.sel{border-color:var(--cy);transform:scale(1.2)}
+.size-btn{width:36px;height:36px;border-radius:8px;background:var(--bg3);border:1px solid var(--bd);font-family:var(--cond);font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s;color:var(--t1)}
+.size-btn.sel{background:var(--cy);color:#000;border-color:var(--cy)}
+.size-btn:hover:not(.sel){border-color:var(--cy);color:var(--cy)}
+`;
+
+/* ─── DATABASE ─── */
+const DB = {
+  users: [
+    { id:"u1",name:"Super Admin",email:"admin@distri.co",password:"admin123",role:"superadmin",active:true,createdAt:"2024-01-01" },
+    { id:"u2",name:"Carlos Norte",email:"norte@distri.co",password:"tienda123",role:"store",storeId:"s1",active:true,createdAt:"2024-01-05" },
+    { id:"u3",name:"Ana Poblado",email:"poblado@distri.co",password:"tienda123",role:"store",storeId:"s2",active:true,createdAt:"2024-01-06" },
+    { id:"u4",name:"Luis Belén",email:"belen@distri.co",password:"tienda123",role:"store",storeId:"s3",active:true,createdAt:"2024-01-07" },
+    { id:"u5",name:"Pedro Cliente",email:"pedro@gmail.com",password:"pass123",role:"client",active:true,createdAt:"2024-01-10" },
+    { id:"u6",name:"María García",email:"maria@gmail.com",password:"pass123",role:"client",active:true,createdAt:"2024-01-12" },
+    { id:"u7",name:"Valentina Restrepo",email:"vale@gmail.com",password:"pass123",role:"client",active:true,createdAt:"2024-01-15" },
+  ],
+  stores: [
+    { id:"s1",name:"DistriModa El Norte",address:"Cra 65 #98-23, Robledo",phone:"604-445-1001",lat:6.292,lng:-75.578,active:true,rating:4.5,totalSales:42500000,ordersCount:342,ownerId:"u2",category:"Ropa Mujer",emoji:"👗",description:"Distribuidora líder de moda femenina del norte",subdomain:"elnorte",website:"elnorte.distrimed.co",hours:{ lun:"8:00–18:00",mar:"8:00–18:00",mie:"8:00–18:00",jue:"8:00–18:00",vie:"8:00–19:00",sab:"9:00–17:00",dom:"Cerrado" },theme:"#00e5ff",bannerEmoji:"👗",tags:["Moda","Mujer","Casual","Formal"],socialMedia:{ instagram:"@distrielNorte",whatsapp:"3001234567" },createdAt:"2024-01-05" },
+    { id:"s2",name:"Fashion Poblado",address:"Cll 10 #43-25, El Poblado",phone:"604-445-1002",lat:6.208,lng:-75.565,active:true,rating:4.8,totalSales:78000000,ordersCount:610,ownerId:"u3",category:"Ropa Premium",emoji:"💎",description:"Boutique premium de moda internacional",subdomain:"fashionpoblado",website:"fashionpoblado.distrimed.co",hours:{ lun:"10:00–20:00",mar:"10:00–20:00",mie:"10:00–20:00",jue:"10:00–20:00",vie:"10:00–21:00",sab:"10:00–21:00",dom:"11:00–18:00" },theme:"#a855f7",bannerEmoji:"💎",tags:["Premium","Lujo","Importada","Accesorios"],socialMedia:{ instagram:"@fashionpoblado",whatsapp:"3009876543" },createdAt:"2024-01-06" },
+    { id:"s3",name:"Belen Urbano",address:"Cra 76 #20-45, Belén",phone:"604-445-1003",lat:6.229,lng:-75.611,active:true,rating:4.7,totalSales:63000000,ordersCount:780,ownerId:"u4",category:"Streetwear",emoji:"🧢",description:"Streetwear y urban fashion para todos",subdomain:"belenurbano",website:"belenurbano.distrimed.co",hours:{ lun:"9:00–19:00",mar:"9:00–19:00",mie:"9:00–19:00",jue:"9:00–19:00",vie:"9:00–20:00",sab:"9:00–20:00",dom:"10:00–16:00" },theme:"#ff6030",bannerEmoji:"🧢",tags:["Streetwear","Urban","Sneakers","Gorras"],socialMedia:{ instagram:"@belenurbano",whatsapp:"3018765432" },createdAt:"2024-01-07" },
+    { id:"s4",name:"Kids & Mom Store",address:"Cll 52 #46-25, El Centro",phone:"604-445-1004",lat:6.252,lng:-75.564,active:true,rating:4.3,totalSales:32000000,ordersCount:289,ownerId:null,category:"Ropa Niños",emoji:"👶",description:"Todo para los más pequeños y sus mamás",subdomain:"kidsmom",website:"kidsmom.distrimed.co",hours:{ lun:"8:00–17:00",mar:"8:00–17:00",mie:"8:00–17:00",jue:"8:00–17:00",vie:"8:00–17:00",sab:"9:00–15:00",dom:"Cerrado" },theme:"#00d68f",bannerEmoji:"👶",tags:["Niños","Bebé","Mamá","Escolar"],socialMedia:{ instagram:"@kidsmomcol",whatsapp:"3027654321" },createdAt:"2024-01-08" },
+    { id:"s5",name:"Sport Zone San Javier",address:"Cra 99 #44-12, San Javier",phone:"604-445-1005",lat:6.238,lng:-75.609,active:false,rating:3.9,totalSales:18000000,ordersCount:145,ownerId:null,category:"Ropa Deportiva",emoji:"🏋️",description:"Ropa deportiva y accesorios fitness",subdomain:"sportzone",website:"sportzone.distrimed.co",hours:{ lun:"Cerrado",mar:"Cerrado",mie:"Cerrado",jue:"Cerrado",vie:"Cerrado",sab:"Cerrado",dom:"Cerrado" },theme:"#ffb700",bannerEmoji:"🏋️",tags:["Deporte","Fitness","Running","Yoga"],socialMedia:{ instagram:"@sportzonemde",whatsapp:"3036543210" },createdAt:"2024-01-09" },
+    { id:"s6",name:"Laureles Jeans",address:"Cra 80 #45-18, Laureles",phone:"604-445-1006",lat:6.247,lng:-75.582,active:true,rating:4.6,totalSales:64000000,ordersCount:512,ownerId:null,category:"Jeans & Denim",emoji:"👖",description:"La mejor selección de jeans en Medellín",subdomain:"laurelesjeans",website:"laurelesjeans.distrimed.co",hours:{ lun:"9:00–18:00",mar:"9:00–18:00",mie:"9:00–18:00",jue:"9:00–18:00",vie:"9:00–19:00",sab:"9:00–19:00",dom:"10:00–15:00" },theme:"#3b82f6",bannerEmoji:"👖",tags:["Jeans","Denim","Hombre","Mujer"],socialMedia:{ instagram:"@laurelesjeans",whatsapp:"3045432109" },createdAt:"2024-01-10" },
+    { id:"s7",name:"Accesorios Envigado",address:"Cra 43 #35-67, Envigado",phone:"604-445-1007",lat:6.168,lng:-75.594,active:true,rating:4.4,totalSales:49000000,ordersCount:398,ownerId:null,category:"Accesorios",emoji:"👜",description:"Bolsos, carteras, joyería y accesorios de moda",subdomain:"accsenvigado",website:"accsenvigado.distrimed.co",hours:{ lun:"9:00–18:00",mar:"9:00–18:00",mie:"9:00–18:00",jue:"9:00–18:00",vie:"9:00–19:00",sab:"10:00–18:00",dom:"Cerrado" },theme:"#f97316",bannerEmoji:"👜",tags:["Bolsos","Joyería","Cinturones","Gorras"],socialMedia:{ instagram:"@accsenvigado",whatsapp:"3054321098" },createdAt:"2024-01-11" },
+    { id:"s8",name:"Calzado Itagüí",address:"Cll 77 #50-33, Itagüí",phone:"604-445-1008",lat:6.184,lng:-75.598,active:true,rating:4.1,totalSales:38000000,ordersCount:302,ownerId:null,category:"Calzado",emoji:"👟",description:"Zapatos, tenis y botas de todas las marcas",subdomain:"calzadoitag",website:"calzadoitag.distrimed.co",hours:{ lun:"8:00–18:00",mar:"8:00–18:00",mie:"8:00–18:00",jue:"8:00–18:00",vie:"8:00–19:00",sab:"8:00–18:00",dom:"9:00–14:00" },theme:"#6366f1",bannerEmoji:"👟",tags:["Tenis","Zapatos","Botas","Sandalias"],socialMedia:{ instagram:"@calzadoitag",whatsapp:"3063210987" },createdAt:"2024-01-12" },
+    { id:"s9",name:"La Floresta Chic",address:"Cra 70 #48-90, La Floresta",phone:"604-445-1009",lat:6.245,lng:-75.604,active:true,rating:4.7,totalSales:57000000,ordersCount:456,ownerId:null,category:"Ropa Mujer",emoji:"🌸",description:"Moda femenina fresca y moderna para el día a día",subdomain:"florestachic",website:"florestachic.distrimed.co",hours:{ lun:"9:00–18:00",mar:"9:00–18:00",mie:"9:00–18:00",jue:"9:00–19:00",vie:"9:00–20:00",sab:"9:00–20:00",dom:"10:00–16:00" },theme:"#ec4899",bannerEmoji:"🌸",tags:["Casual","Floral","Boho","Verano"],socialMedia:{ instagram:"@florestachic",whatsapp:"3072109876" },createdAt:"2024-01-13" },
+    { id:"s10",name:"Masculino Bello",address:"Cra 52 #48-20, Bello",phone:"604-445-1010",lat:6.329,lng:-75.556,active:true,rating:4.5,totalSales:82000000,ordersCount:670,ownerId:null,category:"Ropa Hombre",emoji:"🕴️",description:"Moda masculina casual y formal, todo en un lugar",subdomain:"masculinobello",website:"masculinobello.distrimed.co",hours:{ lun:"8:00–18:00",mar:"8:00–18:00",mie:"8:00–18:00",jue:"8:00–18:00",vie:"8:00–19:00",sab:"9:00–18:00",dom:"10:00–15:00" },theme:"#14b8a6",bannerEmoji:"🕴️",tags:["Hombre","Formal","Casual","Negocios"],socialMedia:{ instagram:"@masculinobello",whatsapp:"3081098765" },createdAt:"2024-01-14" },
+    { id:"s11",name:"Vintage & Co Castilla",address:"Cra 65 #78-12, Castilla",phone:"604-445-1011",lat:6.282,lng:-75.582,active:true,rating:4.6,totalSales:29000000,ordersCount:234,ownerId:null,category:"Vintage",emoji:"🎭",description:"Ropa vintage y segunda mano de calidad premium",subdomain:"vintagecastilla",website:"vintagecastilla.distrimed.co",hours:{ lun:"10:00–18:00",mar:"10:00–18:00",mie:"10:00–18:00",jue:"10:00–18:00",vie:"10:00–19:00",sab:"10:00–19:00",dom:"Cerrado" },theme:"#d97706",bannerEmoji:"🎭",tags:["Vintage","Retro","Upcycling","Sostenible"],socialMedia:{ instagram:"@vintagecastilla",whatsapp:"3090987654" },createdAt:"2024-01-15" },
+    { id:"s12",name:"Lencería Santa Fe",address:"Cll 44 #55-66, Santa Fe",phone:"604-445-1012",lat:6.261,lng:-75.572,active:true,rating:4.2,totalSales:21000000,ordersCount:178,ownerId:null,category:"Lencería",emoji:"🎀",description:"Lencería fina y ropa interior de todas las marcas",subdomain:"lenceriasantafe",website:"lenceriasantafe.distrimed.co",hours:{ lun:"9:00–18:00",mar:"9:00–18:00",mie:"9:00–18:00",jue:"9:00–18:00",vie:"9:00–19:00",sab:"10:00–17:00",dom:"Cerrado" },theme:"#f43f5e",bannerEmoji:"🎀",tags:["Lencería","Interior","Pijamas","Comodidad"],socialMedia:{ instagram:"@lenceriasantafe",whatsapp:"3100876543" },createdAt:"2024-01-16" },
+  ],
+  products: [
+    { id:"p1",storeId:"s1",name:"Vestido Floral Midi",price:89000,category:"Vestidos",stock:45,rating:4.7,emoji:"👗",description:"Vestido midi estampado floral, tela liviana ideal para el clima de Medellín",sales:128,minStock:10,brand:"Zara CO",colors:["Rosa","Azul","Verde"],sizes:["XS","S","M","L","XL"],isNew:true,discount:0 },
+    { id:"p2",storeId:"s1",name:"Blusa Manga Larga Seda",price:65000,category:"Blusas",stock:72,rating:4.5,emoji:"👚",description:"Blusa de seda sintética, elegante y cómoda para oficina",sales:98,minStock:15,brand:"Studio F",colors:["Blanco","Negro","Beige"],sizes:["S","M","L","XL"],isNew:false,discount:15 },
+    { id:"p3",storeId:"s1",name:"Jean Mom Fit",price:128000,category:"Jeans",stock:38,rating:4.6,emoji:"👖",description:"Jean mom fit de alta costura, cintura alta y cómodo",sales:76,minStock:8,brand:"Levi's CO",colors:["Azul","Negro","Gris"],sizes:["28","30","32","34"],isNew:false,discount:0 },
+    { id:"p4",storeId:"s1",name:"Conjunto Deportivo Mujer",price:145000,category:"Deportivo",stock:28,rating:4.8,emoji:"🩱",description:"Set leggings + top deportivo, tela transpirable 4 vías",sales:67,minStock:8,brand:"Nike CO",colors:["Negro","Gris","Coral"],sizes:["XS","S","M","L"],isNew:true,discount:0 },
+    { id:"p5",storeId:"s2",name:"Blazer Estructurado Premium",price:320000,category:"Blazers",stock:18,rating:4.9,emoji:"🥼",description:"Blazer de sastre importado, perfecta estructura, ideal para reuniones ejecutivas",sales:34,minStock:5,brand:"Massimo Dutti",colors:["Negro","Camel","Navy"],sizes:["S","M","L","XL"],isNew:true,discount:0 },
+    { id:"p6",storeId:"s2",name:"Cartera Cuero Genuino",price:480000,category:"Accesorios",stock:12,rating:4.8,emoji:"👜",description:"Cartera de cuero genuino importada, múltiples compartimentos",sales:21,minStock:3,brand:"Guess",colors:["Negro","Café","Rojo"],sizes:["Única"],isNew:false,discount:10 },
+    { id:"p7",storeId:"s2",name:"Vestido Cocktail Noche",price:280000,category:"Vestidos",stock:20,rating:4.7,emoji:"🥻",description:"Vestido de noche con lentejuelas, perfecto para cenas y eventos formales",sales:45,minStock:5,brand:"Zara Premium",colors:["Negro","Dorado","Plateado"],sizes:["XS","S","M","L"],isNew:true,discount:0 },
+    { id:"p8",storeId:"s2",name:"Perfume Premium 100ml",price:195000,category:"Perfumería",stock:30,rating:4.9,emoji:"🧴",description:"Fragancia premium importada, duración 12 horas",sales:89,minStock:10,brand:"Carolina Herrera",colors:["Único"],sizes:["50ml","100ml"],isNew:false,discount:0 },
+    { id:"p9",storeId:"s3",name:"Hoodie Oversized Logo",price:145000,category:"Hoodies",stock:55,rating:4.8,emoji:"🧥",description:"Sudadera oversized con logo bordado, algodón 100%",sales:210,minStock:15,brand:"Supreme CO",colors:["Negro","Blanco","Gris","Rojo"],sizes:["S","M","L","XL","XXL"],isNew:true,discount:0 },
+    { id:"p10",storeId:"s3",name:"Pantalón Cargo Táctico",price:168000,category:"Pantalones",stock:42,rating:4.6,emoji:"👖",description:"Cargo pants estilo táctico, múltiples bolsillos funcionales",sales:134,minStock:10,brand:"Dickies CO",colors:["Kaki","Negro","Verde"],sizes:["S","M","L","XL","XXL"],isNew:false,discount:0 },
+    { id:"p11",storeId:"s3",name:"Gorra Dad Hat Premium",price:78000,category:"Gorras",stock:90,rating:4.5,emoji:"🧢",description:"Dad hat 6 paneles, bordado 3D, ajustable",sales:445,minStock:20,brand:"New Era",colors:["Negro","Blanco","Azul","Rojo","Verde"],sizes:["Única"],isNew:false,discount:20 },
+    { id:"p12",storeId:"s3",name:"Tenis Air Urbano",price:285000,category:"Calzado",stock:24,rating:4.9,emoji:"👟",description:"Tenis estilo urban, suela gruesa chunky, comfort total",sales:98,minStock:6,brand:"Puma Urban",colors:["Blanco/Negro","Todo Negro","Blanco/Gris"],sizes:["38","39","40","41","42","43","44"],isNew:true,discount:0 },
+    { id:"p13",storeId:"s4",name:"Pijama Niño Dinosaurios",price:48000,category:"Pijamas",stock:67,rating:4.5,emoji:"🦕",description:"Pijama de algodón suave con estampado de dinosaurios, tallas 2 a 12 años",sales:189,minStock:15,brand:"Carter's CO",colors:["Azul","Verde"],sizes:["2","4","6","8","10","12"],isNew:false,discount:0 },
+    { id:"p14",storeId:"s4",name:"Vestido Niña Floral",price:62000,category:"Vestidos",stock:45,rating:4.6,emoji:"🌺",description:"Vestido casual floral para niñas, telas frescas y coloridas",sales:134,minStock:10,brand:"Mini Kids",colors:["Rosa","Amarillo","Lila"],sizes:["2","4","6","8","10","12","14"],isNew:true,discount:0 },
+    { id:"p15",storeId:"s4",name:"Tenis Niño Deportivo",price:95000,category:"Calzado",stock:38,rating:4.4,emoji:"👟",description:"Tenis escolares con velcro, duraderos y cómodos",sales:98,minStock:8,brand:"Nike Kids",colors:["Azul/Blanco","Negro/Rojo","Gris"],sizes:["22","23","24","25","26","27","28","29","30"],isNew:false,discount:0 },
+    { id:"p16",storeId:"s6",name:"Jean Skinny Premium",price:148000,category:"Jeans",stock:52,rating:4.7,emoji:"👖",description:"Jean skinny de tela premium stretch, alta durabilidad",sales:234,minStock:12,brand:"Americanino",colors:["Azul Claro","Azul Oscuro","Negro","Gris"],sizes:["26","28","30","32","34","36"],isNew:false,discount:0 },
+    { id:"p17",storeId:"s6",name:"Jean Straight Hombre",price:165000,category:"Jeans",stock:48,rating:4.5,emoji:"👖",description:"Jean straight fit para hombre, clásico y versátil",sales:198,minStock:10,brand:"Diesel CO",colors:["Azul","Negro","Blanco Roto"],sizes:["28","30","32","34","36","38"],isNew:false,discount:10 },
+    { id:"p18",storeId:"s7",name:"Bolso Tote Canvas",price:89000,category:"Bolsos",stock:35,rating:4.6,emoji:"🎒",description:"Bolso tote de canvas resistente al agua, varios bolsillos",sales:145,minStock:8,brand:"Local Brand",colors:["Negro","Beige","Azul","Rosa"],sizes:["Única"],isNew:false,discount:0 },
+    { id:"p19",storeId:"s7",name:"Cinturón Cuero Hombre",price:72000,category:"Cinturones",stock:60,rating:4.3,emoji:"⌚",description:"Cinturón de cuero genuino con hebilla metálica dorada",sales:234,minStock:15,brand:"Artesanal CO",colors:["Negro","Café","Cognac"],sizes:["S","M","L","XL"],isNew:false,discount:0 },
+    { id:"p20",storeId:"s7",name:"Gafas de Sol UV400",price:125000,category:"Gafas",stock:28,rating:4.8,emoji:"🕶️",description:"Gafas de sol protección UV400, montura italiana",sales:89,minStock:5,brand:"Carrera CO",colors:["Negro","Café","Dorado"],sizes:["Única"],isNew:true,discount:0 },
+    { id:"p21",storeId:"s8",name:"Botas Cuero Hombre",price:285000,category:"Botas",stock:22,rating:4.5,emoji:"🥾",description:"Botas de cuero genuino con suela de goma resistente",sales:67,minStock:5,brand:"Cuero & Co",colors:["Negro","Café"],sizes:["38","39","40","41","42","43","44","45"],isNew:false,discount:0 },
+    { id:"p22",storeId:"s8",name:"Sandalias Plataforma",price:98000,category:"Sandalias",stock:40,rating:4.4,emoji:"👡",description:"Sandalias con plataforma de 8cm, correas ajustables",sales:156,minStock:8,brand:"Steve Madden CO",colors:["Negro","Nude","Blanco"],sizes:["35","36","37","38","39","40"],isNew:true,discount:15 },
+    { id:"p23",storeId:"s9",name:"Top Crop Floral",price:55000,category:"Tops",stock:65,rating:4.6,emoji:"🌸",description:"Top crop con estampado floral, ideal para salidas casuales",sales:312,minStock:15,brand:"Floresta Brand",colors:["Rosa","Amarillo","Verde","Blanco"],sizes:["XS","S","M","L"],isNew:true,discount:0 },
+    { id:"p24",storeId:"s9",name:"Maxi Falda Bohemia",price:92000,category:"Faldas",stock:38,rating:4.5,emoji:"🎐",description:"Falda maxi estilo boho con volantes, tela fluida",sales:178,minStock:8,brand:"Bohemia CO",colors:["Terracota","Azul","Estampada"],sizes:["XS","S","M","L","XL"],isNew:false,discount:0 },
+    { id:"p25",storeId:"s10",name:"Camisa Oxford Premium",price:118000,category:"Camisas",stock:58,rating:4.7,emoji:"👔",description:"Camisa Oxford de algodón peinado, perfecta para oficina o casual",sales:267,minStock:12,brand:"Banana Republic CO",colors:["Blanco","Azul Claro","Gris","Celeste"],sizes:["S","M","L","XL","XXL"],isNew:false,discount:0 },
+    { id:"p26",storeId:"s10",name:"Polo Slim Fit",price:85000,category:"Polos",stock:72,rating:4.5,emoji:"🎽",description:"Polo piqué slim fit, cómodo y elegante para todo el día",sales:345,minStock:15,brand:"Lacoste CO",colors:["Blanco","Azul Navy","Verde","Rojo","Negro"],sizes:["S","M","L","XL","XXL"],isNew:false,discount:10 },
+    { id:"p27",storeId:"s10",name:"Bermuda Lino Hombre",price:95000,category:"Bermudas",stock:44,rating:4.6,emoji:"🩳",description:"Bermuda de lino natural, fresca y perfecta para el calor de Medellín",sales:198,minStock:10,brand:"Resorté",colors:["Kaki","Azul","Blanco","Gris"],sizes:["S","M","L","XL","XXL"],isNew:true,discount:0 },
+    { id:"p28",storeId:"s11",name:"Chaqueta Vintage 90s",price:195000,category:"Chaquetas",stock:15,rating:4.8,emoji:"🎭",description:"Chaqueta vintage auténtica años 90, pieza única, excelente estado",sales:34,minStock:3,brand:"Vintage Original",colors:["Roja","Verde","Azul"],sizes:["M","L","XL"],isNew:false,discount:0 },
+    { id:"p29",storeId:"s11",name:"Camiseta Banda Rock",price:75000,category:"Camisetas",stock:28,rating:4.6,emoji:"🎸",description:"Camisetas originales de bandas de rock, piezas de colección",sales:89,minStock:5,brand:"Rock Heritage",colors:["Negro","Blanco"],sizes:["S","M","L","XL"],isNew:false,discount:0 },
+  ],
+  ratings: [
+    { id:"r1",productId:"p1",userId:"u5",score:5,comment:"Llegó perfecto, el estampado es hermoso" },
+    { id:"r2",productId:"p9",userId:"u5",score:5,comment:"El mejor hoodie que he comprado, muy cálido" },
+    { id:"r3",productId:"p5",userId:"u6",score:5,comment:"Excelente calidad premium, vale cada peso" },
+    { id:"r4",productId:"p12",userId:"u7",score:4,comment:"Súper cómodos, me duran todo el día" },
+    { id:"r5",productId:"p25",userId:"u6",score:5,comment:"Perfecta para la oficina, tela de primera" },
+  ],
+  orders: [
+    { id:"o1",storeId:"s1",storeName:"DistriModa El Norte",userId:"u5",items:[{productId:"p1",name:"Vestido Floral Midi",qty:1,price:89000},{productId:"p2",name:"Blusa Manga Larga Seda",qty:2,price:65000}],total:219000,status:"delivered",createdAt:"2025-02-01" },
+    { id:"o2",storeId:"s2",storeName:"Fashion Poblado",userId:"u6",items:[{productId:"p5",name:"Blazer Estructurado Premium",qty:1,price:320000}],total:320000,status:"delivered",createdAt:"2025-02-05" },
+    { id:"o3",storeId:"s3",storeName:"Belen Urbano",userId:"u5",items:[{productId:"p9",name:"Hoodie Oversized Logo",qty:1,price:145000},{productId:"p11",name:"Gorra Dad Hat Premium",qty:2,price:78000}],total:301000,status:"processing",createdAt:"2025-03-01" },
+    { id:"o4",storeId:"s1",storeName:"DistriModa El Norte",userId:"u6",items:[{productId:"p3",name:"Jean Mom Fit",qty:1,price:128000}],total:128000,status:"shipped",createdAt:"2025-03-15" },
+    { id:"o5",storeId:"s9",storeName:"La Floresta Chic",userId:"u7",items:[{productId:"p23",name:"Top Crop Floral",qty:3,price:55000}],total:165000,status:"pending",createdAt:"2025-03-20" },
+    { id:"o6",storeId:"s10",storeName:"Masculino Bello",userId:"u5",items:[{productId:"p25",name:"Camisa Oxford Premium",qty:2,price:118000},{productId:"p26",name:"Polo Slim Fit",qty:1,price:85000}],total:321000,status:"pending",createdAt:"2025-03-22" },
+  ],
+  activity: [
+    { type:"order", msg:"Nuevo pedido en Masculino Bello — $321.000", time:"hace 5 min", color:"var(--cy)" },
+    { type:"store", msg:"Sport Zone San Javier desactivada", time:"hace 12 min", color:"var(--re)" },
+    { type:"user", msg:"Nuevo cliente: Valentina Restrepo registrada", time:"hace 25 min", color:"var(--gr)" },
+    { type:"order", msg:"Pedido entregado en El Norte — $219.000", time:"hace 1h", color:"var(--gr)" },
+    { type:"stock", msg:"⚠️ Stock bajo: Bolso Tote Canvas (3 uds)", time:"hace 2h", color:"var(--ye)" },
+    { type:"order", msg:"Nuevo pedido en La Floresta — $165.000", time:"hace 3h", color:"var(--cy)" },
+    { type:"store", msg:"Nueva tienda creada: Lencería Santa Fe", time:"hace 5h", color:"var(--pu)" },
+  ],
+  salesByMonth:[42,58,71,65,89,103,92,115,128,144,136,158],
+  templates: [
+    { id:"t1",name:"Moda Urbana",emoji:"🏙️",primaryColor:"#00e5ff",bgStyle:"dark-grid",description:"Para streetwear y moda urbana" },
+    { id:"t2",name:"Boutique Premium",emoji:"💎",primaryColor:"#a855f7",bgStyle:"luxury",description:"Para tiendas de lujo y premium" },
+    { id:"t3",name:"Fresco & Floral",emoji:"🌸",primaryColor:"#ec4899",bgStyle:"soft",description:"Para moda femenina y casual" },
+    { id:"t4",name:"Sport & Fitness",emoji:"⚡",primaryColor:"#ffb700",bgStyle:"energy",description:"Para ropa deportiva y fitness" },
+    { id:"t5",name:"Clásico Masculino",emoji:"🕴️",primaryColor:"#14b8a6",bgStyle:"clean",description:"Para moda masculina formal" },
+    { id:"t6",name:"Vintage Retro",emoji:"🎭",primaryColor:"#d97706",bgStyle:"retro",description:"Para tiendas vintage y segunda mano" },
+  ],
+};
+
+/* ─── HELPERS ─── */
+const fmt = n => new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n);
+const fmtK = n => n>=1000000?`$${(n/1000000).toFixed(1)}M`:n>=1000?`$${(n/1000).toFixed(0)}K`:`$${n}`;
+const haversine = (lat1,lng1,lat2,lng2) => {
+  const R=6371,dL=(lat2-lat1)*Math.PI/180,dG=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dL/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dG/2)**2;
+  return +(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))).toFixed(1);
+};
+const statusMap = { pending:["Pendiente","b-warn"], processing:["En proceso","b-cy"], shipped:["Enviado","b-warn"], delivered:["Entregado","b-ok"], cancelled:["Cancelado","b-off"] };
+const genId = () => Math.random().toString(36).slice(2,9);
+const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const DAYS = ["lun","mar","mie","jue","vie","sab","dom"];
+const DAYS_LABEL = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const FASHION_CATS = ["Vestidos","Blusas","Jeans","Deportivo","Blazers","Hoodies","Gorras","Calzado","Accesorios","Pijamas","Faldas","Camisas","Tops","Chaquetas","Bolsos","Lencería","Polos","Bermudas","Camisetas","Pantalones","Cinturones","Gafas","Botas","Sandalias","Perfumería"];
+const isStoreOpen = (store) => {
+  const now = new Date();
+  const dayNames = ["dom","lun","mar","mie","jue","vie","sab"];
+  const today = dayNames[now.getDay()];
+  const hrs = store.hours?.[today];
+  if(!hrs||hrs==="Cerrado") return false;
+  const [open,close] = hrs.split("–");
+  if(!open||!close) return false;
+  const [oh,om] = open.split(":").map(Number);
+  const [ch,cm] = close.split(":").map(Number);
+  const cur = now.getHours()*60+now.getMinutes();
+  return cur >= oh*60+om && cur <= ch*60+cm;
+};
+
+const COLOR_MAP = c => c==="Blanco"?"#fff":c==="Negro"?"#111":c==="Rojo"?"#ef4444":c==="Azul"?"#3b82f6":c==="Verde"?"#22c55e":c==="Rosa"?"#ec4899":c==="Gris"?"#6b7280":c==="Beige"?"#d4b89a":c==="Amarillo"?"#eab308":c==="Café"?"#92400e":c==="Kaki"?"#a3a068":c==="Terracota"?"#c2553c":c==="Coral"?"#ff6b6b":"var(--bg4)";
+
+/* ─── STARS ─── */
+function Stars({ value=0, max=5, onChange }) {
+  const [hover,setHover] = useState(0);
+  return (
+    <div className="stars">
+      {Array.from({length:max},(_,i)=>(
+        <span key={i} className={`star${(hover||value)>i?" on":""}`}
+          onMouseEnter={()=>onChange&&setHover(i+1)}
+          onMouseLeave={()=>onChange&&setHover(0)}
+          onClick={()=>onChange&&onChange(i+1)}>★</span>
+      ))}
+    </div>
+  );
+}
+
+/* ─── MINI CHART ─── */
+function MiniChart({ data, color="var(--cy)", height=80 }) {
+  const max = Math.max(...data);
+  return (
+    <div>
+      <div className="chart-bar-wrap" style={{height}}>
+        {data.map((v,i)=>(
+          <div key={i} className="chart-bar"
+            style={{height:`${(v/max*100)}%`,background:color,opacity:.7+(i===data.length-1?.3:0)}}
+            title={`${MONTHS[i]}: ${v}`}/>
+        ))}
+      </div>
+      <div className="chart-labels">{data.map((_,i)=><div key={i} className="chart-label">{MONTHS[i]}</div>)}</div>
+    </div>
+  );
+}
+
+/* ─── LOGIN PAGE ─── */
+function LoginPage({ onLogin }) {
+  const [tab,setTab] = useState("login");
+  const [email,setEmail] = useState("");
+  const [password,setPassword] = useState("");
+  const [name,setName] = useState("");
+  const [err,setErr] = useState("");
+  const dbRef = useRef(DB);
+
+  const submit = () => {
+    setErr("");
+    if(tab==="login"){
+      const user = dbRef.current.users.find(u=>u.email===email&&u.password===password);
+      if(!user) return setErr("Credenciales incorrectas");
+      if(!user.active) return setErr("Cuenta desactivada. Contacta al administrador.");
+      onLogin(user);
+    } else {
+      if(!name||!email||!password) return setErr("Completa todos los campos");
+      if(password.length<6) return setErr("La contraseña debe tener al menos 6 caracteres");
+      if(dbRef.current.users.find(u=>u.email===email)) return setErr("Email ya registrado");
+      const nu = {id:genId(),name,email,password,role:"client",active:true,createdAt:new Date().toISOString().slice(0,10)};
+      DB.users.push(nu);
+      onLogin(nu);
+    }
+  };
+  const fill = (e,p) => { setEmail(e); setPassword(p); };
+  const kp = e => e.key==="Enter"&&submit();
+
+  return (
+    <div className="login-pg">
+      <div className="login-glow"/>
+      <div className="login-grid"/>
+      <div className="login-card">
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
+          <span style={{fontSize:"2rem"}}>👗</span>
+          <div className="login-logo">DistriMed</div>
+        </div>
+        <div className="login-sub">Red de moda y distribución — Medellín · 400+ tiendas</div>
+
+        <div className="tabs" style={{marginBottom:18}}>
+          {[["login","🔐 Iniciar Sesión"],["register","✨ Registrarse"]].map(([k,l])=>(
+            <button key={k} className={`tab${tab===k?" on":""}`} onClick={()=>{setTab(k);setErr("")}}>{l}</button>
+          ))}
+        </div>
+
+        <div className="demo-box">
+          <div style={{marginBottom:6,fontWeight:700,color:"var(--t0)",fontFamily:"var(--cond)"}}>⚡ Accesos rápidos demo:</div>
+          {[
+            ["admin@distri.co","admin123","🔴 Superadmin"],
+            ["norte@distri.co","tienda123","🟠 Tienda Norte"],
+            ["poblado@distri.co","tienda123","🟣 Fashion Poblado"],
+            ["pedro@gmail.com","pass123","🟢 Cliente Pedro"],
+          ].map(([e,p,l])=>(
+            <div key={e} style={{cursor:"pointer",padding:"3px 0",display:"flex",alignItems:"center",gap:8}} onClick={()=>fill(e,p)}>
+              <b>{l}</b> <span style={{color:"var(--t2)"}}>→ {e}</span>
+            </div>
+          ))}
+        </div>
+
+        {err && <div className="alert al-err">⚠️ {err}</div>}
+
+        {tab==="register" && (
+          <div className="fg">
+            <label>Nombre completo</label>
+            <input placeholder="Tu nombre" value={name} onChange={e=>setName(e.target.value)} onKeyPress={kp}/>
+          </div>
+        )}
+        <div className="fg">
+          <label>Correo electrónico</label>
+          <input type="email" placeholder="correo@ejemplo.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyPress={kp}/>
+        </div>
+        <div className="fg" style={{marginBottom:18}}>
+          <label>Contraseña</label>
+          <input type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)} onKeyPress={kp}/>
+        </div>
+
+        <button className="btn btn-cy w-full" style={{fontSize:"1rem",padding:"12px"}} onClick={submit}>
+          {tab==="login"?"🚀 Entrar":"✨ Crear cuenta"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── CATALOG (CLIENT) ─── */
+function Catalog({ user, db, setDb }) {
+  const [search,setSearch] = useState("");
+  const [cat,setCat] = useState("");
+  const [storeFilter,setStoreFilter] = useState("");
+  const [minP,setMinP] = useState("");
+  const [maxP,setMaxP] = useState("");
+  const [sel,setSel] = useState(null);
+  const [cart,setCart] = useState([]);
+  const [rateVal,setRateVal] = useState(0);
+  const [comment,setComment] = useState("");
+  const [ordered,setOrdered] = useState(false);
+  const [showCart,setShowCart] = useState(false);
+  const [sortBy,setSortBy] = useState("default");
+  const [selColor,setSelColor] = useState("");
+  const [selSize,setSelSize] = useState("");
+
+  const cats = [...new Set(db.products.map(p=>p.category))].sort();
+  const activeStores = db.stores.filter(s=>s.active).map(s=>s.id);
+  let prods = db.products.filter(p=>activeStores.includes(p.storeId));
+  if(search) prods = prods.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||p.category.toLowerCase().includes(search.toLowerCase())||p.brand?.toLowerCase().includes(search.toLowerCase()));
+  if(cat) prods = prods.filter(p=>p.category===cat);
+  if(storeFilter) prods = prods.filter(p=>p.storeId===storeFilter);
+  if(minP) prods = prods.filter(p=>p.price>=+minP);
+  if(maxP) prods = prods.filter(p=>p.price<=+maxP);
+  if(sortBy==="price_asc") prods=[...prods].sort((a,b)=>a.price-b.price);
+  if(sortBy==="price_desc") prods=[...prods].sort((a,b)=>b.price-a.price);
+  if(sortBy==="rating") prods=[...prods].sort((a,b)=>b.rating-a.rating);
+  if(sortBy==="sales") prods=[...prods].sort((a,b)=>b.sales-a.sales);
+  if(sortBy==="new") prods=[...prods].filter(p=>p.isNew).concat(prods.filter(p=>!p.isNew));
+
+  const addCart = (p) => {
+    setCart(c=>{const e=c.find(x=>x.id===p.id);return e?c.map(x=>x.id===p.id?{...x,qty:x.qty+1}:x):[...c,{...p,qty:1,chosenColor:selColor||p.colors?.[0],chosenSize:selSize||p.sizes?.[0]}]});
+  };
+  const removeCart = id => setCart(c=>c.filter(x=>x.id!==id));
+  const cartTotal = cart.reduce((s,x)=>s+x.price*x.qty,0);
+  const cartQty = cart.reduce((s,x)=>s+x.qty,0);
+
+  const placeOrder = () => {
+    if(!cart.length) return;
+    const storeId = cart[0].storeId;
+    const order = {
+      id:genId(),storeId,storeName:db.stores.find(s=>s.id===storeId)?.name||"",
+      userId:user.id,items:cart.map(x=>({productId:x.id,name:x.name,qty:x.qty,price:x.price,color:x.chosenColor,size:x.chosenSize})),
+      total:cartTotal,status:"pending",createdAt:new Date().toISOString().slice(0,10)
+    };
+    const newDb = {...db,orders:[...db.orders,order],stores:db.stores.map(s=>s.id===storeId?{...s,totalSales:s.totalSales+cartTotal,ordersCount:s.ordersCount+1}:s)};
+    setDb(newDb); setCart([]); setOrdered(true); setShowCart(false);
+    setTimeout(()=>setOrdered(false),4000);
+  };
+
+  const submitRating = () => {
+    if(!rateVal||!sel) return;
+    const nr = {id:genId(),productId:sel.id,userId:user.id,score:rateVal,comment};
+    const newRatings = [...db.ratings.filter(r=>!(r.productId===sel.id&&r.userId===user.id)),nr];
+    const prodRatings = newRatings.filter(r=>r.productId===sel.id);
+    const avg = +(prodRatings.reduce((s,r)=>s+r.score,0)/prodRatings.length).toFixed(1);
+    setDb({...db,ratings:newRatings,products:db.products.map(p=>p.id===sel.id?{...p,rating:avg}:p)});
+    setSel(s=>({...s,rating:avg}));
+    setRateVal(0); setComment("");
+  };
+
+  return (
+    <div>
+      {ordered && <div className="alert al-ok">✅ ¡Pedido realizado! Puedes seguirlo en "Mis Pedidos". El equipo de la tienda te contactará pronto.</div>}
+
+      <div className="sec-hd">
+        <div>
+          <div className="sec-ttl">👗 Catálogo de Moda</div>
+          <div style={{fontSize:".75rem",color:"var(--t2)",marginTop:2}}>{prods.length} prendas disponibles · {activeStores.length} tiendas activas</div>
+        </div>
+        <button className="btn btn-cy btn-sm" onClick={()=>setShowCart(true)}>
+          🛒 Carrito{cartQty>0&&` (${cartQty})`}
+          {cartQty>0&&<span style={{marginLeft:4,fontFamily:"var(--mono)",fontSize:".75rem"}}>{fmt(cartTotal)}</span>}
+        </button>
+      </div>
+
+      <div className="filters">
+        <input placeholder="🔍 Buscar prendas, marcas..." value={search} onChange={e=>setSearch(e.target.value)} style={{flex:2,minWidth:180}}/>
+        <select value={cat} onChange={e=>setCat(e.target.value)}>
+          <option value="">Todas las categorías</option>
+          {cats.map(c=><option key={c}>{c}</option>)}
+        </select>
+        <select value={storeFilter} onChange={e=>setStoreFilter(e.target.value)}>
+          <option value="">Todas las tiendas</option>
+          {db.stores.filter(s=>s.active).map(s=><option key={s.id} value={s.id}>{s.emoji} {s.name}</option>)}
+        </select>
+        <select value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+          <option value="default">Ordenar</option>
+          <option value="new">Novedades primero</option>
+          <option value="price_asc">Precio ↑</option>
+          <option value="price_desc">Precio ↓</option>
+          <option value="rating">Mejor rating</option>
+          <option value="sales">Más vendidos</option>
+        </select>
+        <input type="number" placeholder="Mín $" value={minP} onChange={e=>setMinP(e.target.value)} style={{maxWidth:90}}/>
+        <input type="number" placeholder="Máx $" value={maxP} onChange={e=>setMaxP(e.target.value)} style={{maxWidth:90}}/>
+      </div>
+
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+        {["Vestidos","Jeans","Hoodies","Blazers","Calzado","Accesorios","Deportivo","Camisas"].map(c=>(
+          <button key={c} className={`filter-chip${cat===c?" on":""}`} onClick={()=>setCat(cat===c?"":c)}>{c}</button>
+        ))}
+      </div>
+
+      {prods.length===0
+        ? <div className="empty"><div className="empty-ico">👗</div><div className="empty-ttl">Sin resultados</div><div>Ajusta los filtros de búsqueda</div></div>
+        : <div className="prod-grid">
+            {prods.map(p=>{
+              const store = db.stores.find(s=>s.id===p.storeId);
+              const inCart = cart.find(x=>x.id===p.id);
+              const finalPrice = p.discount>0 ? p.price*(1-p.discount/100) : p.price;
+              return (
+                <div key={p.id} className="prod-card" onClick={()=>{setSel(p);setSelColor(p.colors?.[0]||"");setSelSize(p.sizes?.[0]||"")}}>
+                  <div className="prod-thumb">
+                    {p.isNew && <span className="prod-badge"><span className="badge b-cy" style={{fontSize:".58rem"}}>NUEVO</span></span>}
+                    {p.discount>0 && <span className="prod-badge-sale"><span className="badge" style={{background:"var(--re10)",color:"var(--re)",fontSize:".58rem"}}>-{p.discount}%</span></span>}
+                    <span style={{position:"relative",zIndex:1}}>{p.emoji}</span>
+                  </div>
+                  <div className="prod-body">
+                    <div className="prod-name">{p.name}</div>
+                    <div className="prod-cat">{p.category}</div>
+                    {p.brand && <div className="prod-brand">🏷️ {p.brand}</div>}
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4}}>
+                      {p.colors?.slice(0,4).map(c=>(
+                        <div key={c} className="color-swatch" title={c} style={{background:COLOR_MAP(c),border:"1px solid var(--bd)"}}/>
+                      ))}
+                    </div>
+                    <div className="prod-price">
+                      {p.discount>0 && <span style={{textDecoration:"line-through",color:"var(--t2)",marginRight:6,fontSize:".8rem"}}>{fmt(p.price)}</span>}
+                      {fmt(finalPrice)}
+                    </div>
+                    <div className="prod-store">🏪 {store?.name}</div>
+                  </div>
+                  <div className="prod-foot">
+                    <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                      <Stars value={p.rating}/>
+                      <span style={{fontSize:".62rem",color:"var(--t2)"}}>{p.sales} ventas</span>
+                    </div>
+                    <button className="btn btn-cy btn-xs" disabled={p.stock===0}
+                      onClick={e=>{e.stopPropagation();addCart(p)}}
+                      style={inCart?{background:"var(--gr)",color:"#000"}:{}}>
+                      {inCart?`✓ (${inCart.qty})`:p.stock===0?"Agotado":"+ Agregar"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+      }
+
+      {sel && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setSel(null)}>
+          <div className="modal modal-lg">
+            <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+              <div style={{flex:"0 0 180px",height:200,background:"linear-gradient(135deg,var(--bg3),var(--bg4))",borderRadius:"var(--r)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"6rem",border:"1px solid var(--bd)"}}>
+                {sel.emoji}
+              </div>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                  {sel.isNew && <span className="badge b-cy">NUEVO</span>}
+                  <span className="pill">📦 {sel.category}</span>
+                  {sel.brand && <span className="pill">🏷️ {sel.brand}</span>}
+                  <span className="pill" style={{color:sel.stock<=sel.minStock?"var(--re)":sel.stock>30?"var(--gr)":"var(--ye)"}}>
+                    Stock: {sel.stock}
+                  </span>
+                </div>
+                <div className="modal-ttl" style={{marginBottom:6}}>{sel.name}</div>
+                <div style={{color:"var(--t1)",fontSize:".875rem",marginBottom:12,lineHeight:1.5}}>{sel.description}</div>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+                  <div style={{fontFamily:"var(--mono)",color:"var(--cy)",fontSize:"1.6rem",fontWeight:700}}>
+                    {sel.discount>0 ? fmt(sel.price*(1-sel.discount/100)) : fmt(sel.price)}
+                  </div>
+                  {sel.discount>0 && <div style={{textDecoration:"line-through",color:"var(--t2)",fontSize:"1rem"}}>{fmt(sel.price)}</div>}
+                  {sel.discount>0 && <span className="badge" style={{background:"var(--re10)",color:"var(--re)"}}>-{sel.discount}%</span>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+                  <Stars value={sel.rating}/>
+                  <span style={{color:"var(--ye)",fontFamily:"var(--mono)",fontWeight:700}}>{sel.rating}</span>
+                  <span style={{color:"var(--t2)",fontSize:".78rem"}}>/5 · {sel.sales} ventas</span>
+                </div>
+              </div>
+            </div>
+
+            {sel.colors && sel.colors.length > 0 && (
+              <div style={{marginBottom:14}}>
+                <label>COLOR: {selColor}</label>
+                <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
+                  {sel.colors.map(c=>(
+                    <div key={c} onClick={()=>setSelColor(c)}
+                      className={`color-swatch${selColor===c?" sel":""}`}
+                      style={{width:28,height:28,background:COLOR_MAP(c),border:"1px solid var(--bd)"}}
+                      title={c}/>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sel.sizes && sel.sizes.length > 0 && sel.sizes[0]!=="Única" && (
+              <div style={{marginBottom:16}}>
+                <label>TALLA: {selSize}</label>
+                <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                  {sel.sizes.map(s=>(
+                    <button key={s} className={`size-btn${selSize===s?" sel":""}`} onClick={()=>setSelSize(s)}>{s}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="divider"/>
+            <div style={{marginBottom:8,fontFamily:"var(--cond)",fontWeight:700,fontSize:".88rem",color:"var(--t1)"}}>DEJAR CALIFICACIÓN</div>
+            <Stars value={rateVal} onChange={setRateVal}/>
+            <textarea style={{marginTop:8,resize:"none",height:56}} placeholder="¿Qué te pareció? (opcional)" value={comment} onChange={e=>setComment(e.target.value)}/>
+            <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
+              <button className="btn btn-gr btn-sm" onClick={submitRating} disabled={!rateVal}>⭐ Calificar</button>
+              <button className="btn btn-cy" onClick={()=>{addCart({...sel,chosenColor:selColor,chosenSize:selSize});setSel(null)}} disabled={sel.stock===0}>🛒 {sel.stock===0?"Agotado":"Agregar al carrito"}</button>
+              <button className="btn btn-sec btn-sm" onClick={()=>setSel(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCart && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowCart(false)}>
+          <div className="modal">
+            <div className="modal-ttl">🛒 Carrito de compras</div>
+            {cart.length===0
+              ? <div className="empty"><div className="empty-ico">🛒</div><div>El carrito está vacío</div></div>
+              : <>
+                  {cart.map(x=>(
+                    <div key={x.id} style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,padding:"10px 0",borderBottom:"1px solid var(--bd)"}}>
+                      <span style={{fontSize:"1.8rem"}}>{x.emoji}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"var(--cond)",fontWeight:700}}>{x.name}</div>
+                        <div style={{fontSize:".75rem",color:"var(--t2)"}}>x{x.qty} · {fmt(x.price)} c/u</div>
+                        {(x.chosenColor||x.chosenSize) && <div style={{fontSize:".7rem",color:"var(--t1)",marginTop:2}}>
+                          {x.chosenColor && `🎨 ${x.chosenColor}`} {x.chosenSize && `📐 ${x.chosenSize}`}
+                        </div>}
+                      </div>
+                      <div style={{fontFamily:"var(--mono)",color:"var(--cy)"}}>{fmt(x.price*x.qty)}</div>
+                      <button className="btn btn-re btn-xs" onClick={()=>removeCart(x.id)}>✕</button>
+                    </div>
+                  ))}
+                  <div style={{display:"flex",justifyContent:"space-between",fontFamily:"var(--cond)",fontSize:"1.15rem",fontWeight:800,margin:"16px 0 8px",padding:"12px 0",borderTop:"1px solid var(--bd)"}}>
+                    <span>TOTAL</span><span style={{color:"var(--cy)"}}>{fmt(cartTotal)}</span>
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="btn btn-cy" style={{flex:1}} onClick={placeOrder}>✅ Confirmar pedido</button>
+                    <button className="btn btn-sec" onClick={()=>setShowCart(false)}>Cancelar</button>
+                  </div>
+                </>
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── MAP VIEW ─── */
+function MapView({ stores, userLoc, db }) {
+  const [sel,setSel] = useState(null);
+  const [filter,setFilter] = useState("");
+  const [searchS,setSearchS] = useState("");
+  const [showOnly,setShowOnly] = useState("all");
+
+  const toX = lng => `${((lng - (-75.64)) / ((-75.54) - (-75.64))) * 100}%`;
+  const toY = lat => `${(1 - (lat - 6.15) / (6.35 - 6.15)) * 100}%`;
+  const active = stores.filter(s=>s.active);
+  const cats = [...new Set(stores.map(s=>s.category))];
+
+  let visibleStores = stores;
+  if(showOnly==="active") visibleStores = stores.filter(s=>s.active);
+  if(showOnly==="inactive") visibleStores = stores.filter(s=>!s.active);
+  if(filter) visibleStores = visibleStores.filter(s=>s.category===filter);
+  if(searchS) visibleStores = visibleStores.filter(s=>s.name.toLowerCase().includes(searchS.toLowerCase())||s.address.toLowerCase().includes(searchS.toLowerCase()));
+
+  const selStore = stores.find(s=>s.id===sel);
+  const selProducts = selStore ? db.products.filter(p=>p.storeId===selStore.id).slice(0,3) : [];
+
+  return (
+    <div>
+      <div className="sec-hd">
+        <div>
+          <div className="sec-ttl">🗺️ Mapa de Tiendas</div>
+          <div style={{fontSize:".75rem",color:"var(--t2)",marginTop:2}}>
+            {userLoc?<span className="text-gr">📍 GPS activo · ordenado por distancia</span>:<span>Ubícate para ver tiendas cercanas</span>}
+          </div>
+        </div>
+        {userLoc && <span className="badge b-ok">📍 Ubicado</span>}
+      </div>
+
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        <input placeholder="🔍 Buscar tienda..." value={searchS} onChange={e=>setSearchS(e.target.value)} style={{flex:1,minWidth:150}}/>
+        <select value={filter} onChange={e=>setFilter(e.target.value)} style={{width:"auto"}}>
+          <option value="">Todas las categorías</option>
+          {cats.map(c=><option key={c}>{c}</option>)}
+        </select>
+        <div style={{display:"flex",gap:4}}>
+          {[["all","Todas"],["active","Activas"],["inactive","Inactivas"]].map(([k,l])=>(
+            <button key={k} className={`filter-chip${showOnly===k?" on":""}`} onClick={()=>setShowOnly(k)}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:16,alignItems:"start"}}>
+        <div className="map-wrap" style={{height:520,position:"relative"}}>
+          <div className="map-grid"/>
+          <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}} viewBox="0 0 100 100" preserveAspectRatio="none">
+            <line x1="50%" y1="0%" x2="50%" y2="100%" stroke="#1a2d47" strokeWidth="1.2"/>
+            <line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#1a2d47" strokeWidth="1.2"/>
+            <line x1="30%" y1="0%" x2="70%" y2="100%" stroke="#1a3a55" strokeWidth="0.7"/>
+            <line x1="18%" y1="0%" x2="45%" y2="100%" stroke="#00e5ff" strokeWidth="0.6" opacity="0.3"/>
+            <line x1="75%" y1="0%" x2="90%" y2="100%" stroke="#00e5ff" strokeWidth="0.6" opacity="0.3"/>
+            <text x="35%" y="42%" fill="#253c5a" fontSize="5" fontFamily="DM Mono">Autopista Norte</text>
+            <text x="8%" y="65%" fill="#253c5a" fontSize="5" fontFamily="DM Mono">Av. Regional</text>
+            <text x="48%" y="82%" fill="#253c5a" fontSize="5" fontFamily="DM Mono">Av. El Poblado</text>
+          </svg>
+
+          <div style={{position:"absolute",top:8,left:12,color:"var(--t2)",fontSize:".58rem",fontFamily:"var(--mono)",letterSpacing:".1em",zIndex:5}}>
+            ÁREA METROPOLITANA · MEDELLÍN · COLOMBIA
+          </div>
+
+          {stores.map(s=>{
+            const x=toX(s.lng), y=toY(s.lat);
+            const isSel=sel===s.id;
+            const isFiltered = visibleStores.every(vs=>vs.id!==s.id)&&s.id!==sel;
+            const dist = userLoc?haversine(userLoc.lat,userLoc.lng,s.lat,s.lng):null;
+            const open = isStoreOpen(s);
+            return (
+              <div key={s.id} style={{position:"absolute",left:x,top:y,transform:"translate(-50%,-50%)",zIndex:isSel?10:5,cursor:"pointer",opacity:isFiltered?.15:1,transition:"opacity .2s"}}
+                onClick={()=>setSel(isSel?null:s.id)}>
+                <div style={{position:"relative"}}>
+                  {isSel && <div style={{position:"absolute",inset:-12,borderRadius:"50%",border:"2px solid var(--cy)",animation:"ring 1.5s infinite",zIndex:0}}/>}
+                  <div style={{background:isSel?"var(--cy)":s.active?"var(--bg3)":"rgba(255,51,85,.12)",border:`2px solid ${isSel?"var(--cy)":s.active?"var(--bd2)":"var(--re)"}`,borderRadius:"50%",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",boxShadow:isSel?`0 0 20px var(--cy),0 0 40px rgba(0,229,255,.3)`:s.active?"0 2px 8px rgba(0,0,0,.5)":"none",transition:"all .2s",position:"relative",zIndex:1}}>
+                    {s.emoji}
+                    {s.active && open && <div style={{position:"absolute",top:-2,right:-2,width:9,height:9,borderRadius:"50%",background:"var(--gr)",border:"1px solid var(--bg)"}}/>}
+                  </div>
+                  {isSel && selStore && (
+                    <div style={{position:"absolute",bottom:"calc(100% + 12px)",left:"50%",transform:"translateX(-50%)",background:"var(--bg1)",border:`1px solid ${selStore.theme||"var(--cy)"}`,borderRadius:12,padding:"12px 16px",minWidth:220,whiteSpace:"nowrap",zIndex:20,boxShadow:"0 8px 32px rgba(0,0,0,.7)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                        <span style={{fontSize:"1.3rem"}}>{selStore.emoji}</span>
+                        <div>
+                          <div style={{fontFamily:"var(--cond)",fontWeight:800,fontSize:".95rem",color:selStore.theme||"var(--cy)"}}>{selStore.name}</div>
+                          <div style={{fontSize:".65rem",color:"var(--t2)"}}>{selStore.address}</div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:8,fontSize:".7rem",color:"var(--t1)",marginBottom:6,flexWrap:"wrap"}}>
+                        <span>⭐ {selStore.rating}</span>
+                        <span>📦 {db.products.filter(p=>p.storeId===selStore.id).length} prendas</span>
+                        {dist && <span style={{color:"var(--or)"}}>📍 {dist}km</span>}
+                        <span className={`badge ${open?"b-ok":"b-off"}`} style={{fontSize:".58rem"}}>{open?"ABIERTO":"CERRADO"}</span>
+                      </div>
+                      <div style={{fontFamily:"var(--mono)",fontSize:".65rem",color:"var(--t2)",marginBottom:8}}>🌐 {selStore.subdomain}.distrimed.co</div>
+                      {selProducts.length>0 && (
+                        <div style={{borderTop:"1px solid var(--bd)",paddingTop:6}}>
+                          <div style={{fontSize:".6rem",color:"var(--t2)",marginBottom:4,fontFamily:"var(--cond)",fontWeight:700}}>PRODUCTOS DESTACADOS</div>
+                          {selProducts.map(p=>(
+                            <div key={p.id} style={{fontSize:".7rem",color:"var(--t1)",padding:"1px 0"}}>{p.emoji} {p.name} · <span style={{color:"var(--cy)",fontFamily:"var(--mono)"}}>{fmt(p.price)}</span></div>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{position:"absolute",bottom:-6,left:"50%",width:10,height:10,background:"var(--bg1)",border:"1px solid var(--cy)",borderBottom:"none",borderLeft:"none",transform:"translateX(-50%) rotate(135deg)"}}/>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {userLoc && (
+            <div style={{position:"absolute",left:toX(userLoc.lng),top:toY(userLoc.lat),transform:"translate(-50%,-50%)",zIndex:15}}>
+              <div style={{width:16,height:16,borderRadius:"50%",background:"var(--or)",boxShadow:"0 0 20px var(--or)",border:"2px solid #fff"}}/>
+              <div style={{position:"absolute",inset:-8,borderRadius:"50%",border:"2px solid var(--or)",animation:"ring 2s infinite"}}/>
+              <div style={{position:"absolute",bottom:"calc(100% + 4px)",left:"50%",transform:"translateX(-50%)",background:"var(--bg1)",border:"1px solid var(--or)",borderRadius:6,padding:"3px 8px",fontSize:".6rem",color:"var(--or)",fontFamily:"var(--mono)",whiteSpace:"nowrap",zIndex:10}}>
+                TÚ ESTÁS AQUÍ
+              </div>
+            </div>
+          )}
+
+          <div style={{position:"absolute",bottom:10,left:10,background:"rgba(5,12,26,.93)",border:"1px solid var(--bd)",borderRadius:8,padding:"8px 12px",fontSize:".65rem",color:"var(--t1)",zIndex:5}}>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              <span style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:10,height:10,borderRadius:"50%",background:"var(--bg3)",border:"1px solid var(--bd2)"}}/>Tienda activa</span>
+              <span style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:10,height:10,borderRadius:"50%",background:"rgba(255,51,85,.15)",border:"1px solid var(--re)"}}/>Inactiva</span>
+              {userLoc && <span style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:10,height:10,borderRadius:"50%",background:"var(--or)"}}/>Tu ubicación</span>}
+              <span style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:"50%",background:"var(--gr)"}}/>Abierta ahora</span>
+            </div>
+          </div>
+          <div style={{position:"absolute",bottom:10,right:10,background:"rgba(5,12,26,.93)",border:"1px solid var(--bd)",borderRadius:8,padding:"6px 10px",fontSize:".65rem",color:"var(--cy)",fontFamily:"var(--mono)",zIndex:5}}>
+            {active.length}/{stores.length} tiendas · {visibleStores.length} visibles
+          </div>
+        </div>
+
+        <div style={{height:520,overflowY:"auto",display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{fontSize:".7rem",color:"var(--t2)",fontFamily:"var(--cond)",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",padding:"0 4px 6px",borderBottom:"1px solid var(--bd)",marginBottom:4}}>
+            {userLoc?"📍 Por distancia":"Tiendas disponibles"}
+          </div>
+          {visibleStores
+            .map(s=>({...s,dist:userLoc?haversine(userLoc.lat,userLoc.lng,s.lat,s.lng):null}))
+            .sort((a,b)=>a.dist!==null&&b.dist!==null?a.dist-b.dist:b.totalSales-a.totalSales)
+            .map(s=>{
+              const open = isStoreOpen(s);
+              return (
+                <div key={s.id} className={`store-card${sel===s.id?" sel":""}`} onClick={()=>setSel(sel===s.id?null:s.id)}>
+                  <div className="s-emoji" style={{position:"relative"}}>
+                    {s.emoji}
+                    {s.active && open && <div style={{position:"absolute",top:0,right:0,width:8,height:8,borderRadius:"50%",background:"var(--gr)",border:"1px solid var(--bg)"}}/>}
+                  </div>
+                  <div className="s-info">
+                    <div className="s-name" style={{color:s.active?"var(--t0)":"var(--t2)"}}>{s.name}</div>
+                    <div className="s-addr">{s.address}</div>
+                    <div style={{display:"flex",gap:6,marginTop:3,fontSize:".65rem",color:"var(--t2)",flexWrap:"wrap"}}>
+                      <span>⭐ {s.rating}</span>
+                      <span>👗 {db.products.filter(p=>p.storeId===s.id).length}</span>
+                      <span className="pill" style={{fontSize:".58rem"}}>{s.category}</span>
+                      <span className={`badge ${s.active?"b-ok":"b-off"}`} style={{fontSize:".58rem"}}>{s.active?"ON":"OFF"}</span>
+                    </div>
+                    {s.subdomain && <div style={{marginTop:3,fontFamily:"var(--mono)",fontSize:".62rem",color:"var(--pu)"}}>{s.subdomain}.distrimed.co</div>}
+                  </div>
+                  {s.dist!==null && <div className="s-dist">{s.dist}km</div>}
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ORDERS (CLIENT) ─── */
+function Orders({ user, db }) {
+  const orders = db.orders.filter(o=>o.userId===user.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const steps = ["pending","processing","shipped","delivered"];
+  return (
+    <div>
+      <div className="sec-hd">
+        <div className="sec-ttl">📋 Mis Pedidos</div>
+        <span className="badge b-cy">{orders.length} pedidos</span>
+      </div>
+      {orders.length===0
+        ? <div className="empty"><div className="empty-ico">📋</div><div className="empty-ttl">Sin pedidos aún</div><div>Agrega prendas al carrito para comenzar</div></div>
+        : orders.map(o=>{
+          const store = db.stores.find(s=>s.id===o.storeId);
+          return (
+            <div key={o.id} className="card" style={{marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    {store && <span style={{fontSize:"1.3rem"}}>{store.emoji}</span>}
+                    <div style={{fontFamily:"var(--cond)",fontWeight:800,fontSize:"1rem"}}>{o.storeName}</div>
+                  </div>
+                  <div style={{fontSize:".72rem",color:"var(--t2)",marginTop:2}}>#{o.id.toUpperCase()} · {o.createdAt}</div>
+                </div>
+                <span className={`badge ${statusMap[o.status]?.[1]||"b-cy"}`}>{statusMap[o.status]?.[0]||o.status}</span>
+              </div>
+              {o.status!=="cancelled" && (
+                <div className="order-status-bar" style={{marginBottom:12}}>
+                  {steps.map((s,i)=><div key={s} className={`os-step${steps.indexOf(o.status)>=i?" done":""}`}/>)}
+                </div>
+              )}
+              {o.items.map((it,i)=>(
+                <div key={i} style={{fontSize:".82rem",color:"var(--t1)",padding:"3px 0",display:"flex",justifyContent:"space-between"}}>
+                  <span>→ {it.name} × {it.qty} {it.color&&`(${it.color})`} {it.size&&`[${it.size}]`}</span>
+                  <span style={{fontFamily:"var(--mono)",color:"var(--cy)"}}>{fmt(it.price*it.qty)}</span>
+                </div>
+              ))}
+              <div style={{marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid var(--bd)"}}>
+                <span style={{color:"var(--t2)",fontSize:".75rem"}}>{o.items.reduce((s,i)=>s+i.qty,0)} ítem(s)</span>
+                <span style={{fontFamily:"var(--mono)",color:"var(--cy)",fontSize:"1rem",fontWeight:700}}>{fmt(o.total)}</span>
+              </div>
+            </div>
+          );
+        })
+      }
+    </div>
+  );
+}
+
+/* ─── STORE ADMIN ─── */
+function StoreAdmin({ user, db, setDb }) {
+  const store = db.stores.find(s=>s.id===user.storeId);
+  const [tab,setTab] = useState("dashboard");
+  const [showModal,setShowModal] = useState(false);
+  const [editing,setEditing] = useState(null);
+  const [form,setForm] = useState({name:"",price:"",category:"",stock:"",minStock:"10",description:"",emoji:"👗",brand:"",colors:"",sizes:"",isNew:false,discount:0});
+  const [alert,setAlert] = useState(null);
+  const [hoursForm,setHoursForm] = useState(null);
+  const [profileForm,setProfileForm] = useState(null);
+
+  if(!store) return <div className="empty"><div className="empty-ico">❌</div><div className="empty-ttl">Tienda no encontrada</div></div>;
+
+  const myProducts = db.products.filter(p=>p.storeId===store.id);
+  const myOrders = db.orders.filter(o=>o.storeId===store.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const lowStock = myProducts.filter(p=>p.stock<=p.minStock&&p.stock>0);
+  const outOfStock = myProducts.filter(p=>p.stock===0);
+  const revenue = myOrders.reduce((s,o)=>s+o.total,0);
+  const avgRating = myProducts.length ? (myProducts.reduce((s,p)=>s+p.rating,0)/myProducts.length).toFixed(1) : 0;
+  const isOpen = isStoreOpen(store);
+
+  const showAlert = (type,msg) => { setAlert({type,msg}); setTimeout(()=>setAlert(null),3000); };
+
+  const openAdd = () => { setEditing(null); setForm({name:"",price:"",category:FASHION_CATS[0],stock:"",minStock:"10",description:"",emoji:"👗",brand:"",colors:"Negro,Blanco",sizes:"S,M,L,XL",isNew:true,discount:0}); setShowModal(true); };
+  const openEdit = p => { setEditing(p); setForm({name:p.name,price:String(p.price),category:p.category,stock:String(p.stock),minStock:String(p.minStock||10),description:p.description,emoji:p.emoji,brand:p.brand||"",colors:(p.colors||[]).join(","),sizes:(p.sizes||[]).join(","),isNew:p.isNew||false,discount:p.discount||0}); setShowModal(true); };
+
+  const save = () => {
+    if(!form.name||!form.price) return showAlert("err","Nombre y precio son requeridos");
+    const data = {...form,price:+form.price,stock:+form.stock,minStock:+form.minStock||10,colors:form.colors.split(",").map(c=>c.trim()).filter(Boolean),sizes:form.sizes.split(",").map(s=>s.trim()).filter(Boolean),discount:+form.discount||0,isNew:!!form.isNew};
+    if(editing) {
+      setDb({...db,products:db.products.map(p=>p.id===editing.id?{...p,...data}:p)});
+      showAlert("ok","✅ Producto actualizado");
+    } else {
+      const np = {id:genId(),storeId:store.id,...data,rating:0,sales:0};
+      setDb({...db,products:[...db.products,np]});
+      showAlert("ok","✅ Producto creado");
+    }
+    setShowModal(false);
+  };
+
+  const del = id => { if(!confirm("¿Eliminar este producto?")) return; setDb({...db,products:db.products.filter(p=>p.id!==id)}); showAlert("ok","Producto eliminado"); };
+  const stockChange = (id,val) => setDb({...db,products:db.products.map(p=>p.id===id?{...p,stock:Math.max(0,p.stock+val)}:p)});
+  const updateOrderStatus = (oid,status) => setDb({...db,orders:db.orders.map(o=>o.id===oid?{...o,status}:o)});
+  const saveHours = () => { setDb({...db,stores:db.stores.map(s=>s.id===store.id?{...s,hours:hoursForm}:s)}); setHoursForm(null); showAlert("ok","✅ Horarios actualizados"); };
+  const saveProfile = () => { setDb({...db,stores:db.stores.map(s=>s.id===store.id?{...s,...profileForm,socialMedia:{instagram:profileForm.instagram,whatsapp:profileForm.whatsapp}}:s)}); setProfileForm(null); showAlert("ok","✅ Perfil actualizado"); };
+
+  return (
+    <div>
+      {alert && <div className={`alert ${alert.type==="ok"?"al-ok":"al-err"}`}>{alert.msg}</div>}
+
+      <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,padding:16,background:"var(--bg2)",borderRadius:"var(--rl)",border:"1px solid var(--bd)",flexWrap:"wrap"}}>
+        <div style={{fontSize:"3rem",flexShrink:0}}>{store.emoji}</div>
+        <div style={{flex:1,minWidth:200}}>
+          <div style={{fontFamily:"var(--cond)",fontSize:"1.5rem",fontWeight:900}}>{store.name}</div>
+          <div style={{fontSize:".78rem",color:"var(--t2)",marginTop:2}}>{store.address} · {store.phone}</div>
+          <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+            <span className={`badge ${store.active?"b-ok":"b-off"}`}>{store.active?"✓ ACTIVA":"✕ INACTIVA"}</span>
+            <span className={`badge ${isOpen?"b-ok":"b-off"}`}>{isOpen?"🟢 ABIERTA AHORA":"🔴 CERRADA"}</span>
+            <span className="subdomain-pill">🌐 {store.subdomain}.distrimed.co</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat"><div className="stat-ico">👗</div><div className="stat-val">{myProducts.length}</div><div className="stat-lbl">Productos</div><div className="stat-sub">{outOfStock.length} agotados · {lowStock.length} bajo stock</div></div>
+        <div className="stat"><div className="stat-ico">📋</div><div className="stat-val">{myOrders.length}</div><div className="stat-lbl">Pedidos</div><div className="stat-sub">{myOrders.filter(o=>o.status==="pending").length} pendientes</div></div>
+        <div className="stat"><div className="stat-ico">💰</div><div className="stat-val text-cy">{fmtK(store.totalSales)}</div><div className="stat-lbl">Ventas totales</div><div className="stat-sub">{fmtK(revenue)} este período</div></div>
+        <div className="stat"><div className="stat-ico">⭐</div><div className="stat-val text-ye">{avgRating}</div><div className="stat-lbl">Rating promedio</div><div className="stat-sub">{store.ordersCount} pedidos totales</div></div>
+      </div>
+
+      {(lowStock.length>0||outOfStock.length>0) && (
+        <div className="alert al-warn">⚠️ {outOfStock.length>0&&`${outOfStock.length} producto(s) agotado(s). `}{lowStock.length>0&&`Stock bajo: ${lowStock.map(p=>p.name).join(", ")}`}</div>
+      )}
+
+      <div className="tabs">
+        {[["dashboard","📊 Dashboard"],["products","👗 Productos"],["orders","📋 Pedidos"],["hours","🕐 Horarios"],["profile","🏪 Perfil"],["page","🌐 Mi Página"]].map(([k,l])=>(
+          <button key={k} className={`tab${tab===k?" on":""}`} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+
+      {tab==="dashboard" && (
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
+            <div className="card">
+              <div style={{fontFamily:"var(--cond)",fontSize:".8rem",fontWeight:700,color:"var(--t2)",marginBottom:10}}>VENTAS POR MES</div>
+              <MiniChart data={db.salesByMonth} color={store.theme||"var(--cy)"}/>
+            </div>
+            <div className="card">
+              <div style={{fontFamily:"var(--cond)",fontSize:".8rem",fontWeight:700,color:"var(--t2)",marginBottom:10}}>TOP PRODUCTOS</div>
+              {myProducts.sort((a,b)=>b.sales-a.sales).slice(0,4).map(p=>(
+                <div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid var(--bd)",fontSize:".78rem"}}>
+                  <span>{p.emoji} {p.name}</span>
+                  <span style={{fontFamily:"var(--mono)",color:"var(--cy)"}}>{p.sales} uds</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div style={{fontFamily:"var(--cond)",fontSize:".8rem",fontWeight:700,color:"var(--t2)",marginBottom:10}}>PEDIDOS RECIENTES</div>
+            {myOrders.slice(0,4).map(o=>(
+              <div key={o.id} className="feed-item">
+                <div className="feed-dot" style={{background:"var(--cy)"}}/>
+                <div style={{flex:1}}>
+                  <div>{o.items.map(i=>i.name).join(", ")}</div>
+                  <div style={{color:"var(--t2)",fontSize:".72rem"}}>{o.createdAt}</div>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <span style={{fontFamily:"var(--mono)",color:"var(--cy)"}}>{fmt(o.total)}</span>
+                  <span className={`badge ${statusMap[o.status]?.[1]}`}>{statusMap[o.status]?.[0]}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab==="products" && (
+        <>
+          <div className="sec-hd">
+            <div className="sec-ttl">Mis Prendas ({myProducts.length})</div>
+            <button className="btn btn-cy btn-sm" onClick={openAdd}>+ Nueva prenda</button>
+          </div>
+          <div className="tbl-wrap">
+            <table>
+              <thead><tr><th>Prenda</th><th>Precio</th><th>Stock</th><th>Tallas</th><th>Ventas</th><th>Rating</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody>
+                {myProducts.map(p=>(
+                  <tr key={p.id}>
+                    <td>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:"1.4rem"}}>{p.emoji}</span>
+                        <div>
+                          <div style={{fontFamily:"var(--cond)",fontWeight:700}}>{p.name}</div>
+                          <div style={{fontSize:".7rem",color:"var(--t2)"}}>{p.category} · {p.brand}</div>
+                          {p.isNew && <span className="badge b-cy" style={{fontSize:".55rem",marginTop:2}}>NUEVO</span>}
+                        </div>
+                      </div>
+                    </td>
+                    <td><span className="mono text-cy">{fmt(p.price)}</span>{p.discount>0 && <div style={{fontSize:".65rem",color:"var(--re)"}}>-{p.discount}%</div>}</td>
+                    <td>
+                      <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                        <button className="btn btn-sec btn-xs" onClick={()=>stockChange(p.id,-10)}>-10</button>
+                        <button className="btn btn-sec btn-xs" onClick={()=>stockChange(p.id,-1)}>-</button>
+                        <span className={`fw8 ${p.stock===0?"text-re":p.stock<=p.minStock?"text-ye":"text-gr"}`} style={{minWidth:28,textAlign:"center"}}>{p.stock}</span>
+                        <button className="btn btn-sec btn-xs" onClick={()=>stockChange(p.id,1)}>+</button>
+                        <button className="btn btn-sec btn-xs" onClick={()=>stockChange(p.id,10)}>+10</button>
+                      </div>
+                    </td>
+                    <td style={{fontSize:".72rem",color:"var(--t1)"}}>{(p.sizes||[]).join(", ")||"—"}</td>
+                    <td><span style={{color:"var(--t1)"}}>{p.sales}</span></td>
+                    <td><Stars value={p.rating}/><span style={{fontSize:".65rem",color:"var(--ye)",marginLeft:3}}>{p.rating}</span></td>
+                    <td>{p.stock===0?<span className="badge b-off">AGOTADO</span>:p.stock<=p.minStock?<span className="badge b-warn">BAJO</span>:<span className="badge b-ok">OK</span>}</td>
+                    <td>
+                      <div style={{display:"flex",gap:6}}>
+                        <button className="btn btn-sec btn-xs" onClick={()=>openEdit(p)}>✏️</button>
+                        <button className="btn btn-re btn-xs" onClick={()=>del(p.id)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {tab==="orders" && (
+        <>
+          <div className="sec-ttl mb-3">Pedidos Recibidos ({myOrders.length})</div>
+          {myOrders.length===0
+            ? <div className="empty"><div className="empty-ico">📋</div><div>Sin pedidos aún</div></div>
+            : <div className="tbl-wrap"><table>
+                <thead><tr><th>ID</th><th>Fecha</th><th>Prendas</th><th>Total</th><th>Estado</th><th>Acción</th></tr></thead>
+                <tbody>
+                  {myOrders.map(o=>(
+                    <tr key={o.id}>
+                      <td><span className="mono text-xs text-muted">#{o.id.toUpperCase().slice(0,6)}</span></td>
+                      <td style={{fontSize:".8rem"}}>{o.createdAt}</td>
+                      <td style={{fontSize:".78rem",color:"var(--t1)"}}>{o.items.map(i=>`${i.qty}x ${i.name}`).join(", ")}</td>
+                      <td><span className="mono text-cy">{fmt(o.total)}</span></td>
+                      <td><span className={`badge ${statusMap[o.status]?.[1]||"b-cy"}`}>{statusMap[o.status]?.[0]||o.status}</span></td>
+                      <td>
+                        <select value={o.status} onChange={e=>updateOrderStatus(o.id,e.target.value)} style={{padding:"4px 8px",fontSize:".72rem",width:"auto"}}>
+                          {Object.entries(statusMap).map(([k,[l]])=><option key={k} value={k}>{l}</option>)}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+          }
+        </>
+      )}
+
+      {tab==="hours" && (
+        <div style={{maxWidth:600}}>
+          <div className="sec-hd">
+            <div className="sec-ttl">🕐 Horarios de Atención</div>
+            <button className="btn btn-cy btn-sm" onClick={()=>setHoursForm({...store.hours})}>✏️ Editar horarios</button>
+          </div>
+          <div className="store-hours-grid">
+            {DAYS.map((d,i)=>{
+              const hrs = store.hours?.[d];
+              return (
+                <div key={d} className="hours-chip">
+                  <div className="hours-day">{DAYS_LABEL[i]}</div>
+                  {hrs && hrs!=="Cerrado" ? <div className="hours-time">{hrs}</div> : <div className="hours-closed">Cerrado</div>}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{marginTop:14,padding:12,background:"var(--bg3)",borderRadius:"var(--r)",fontSize:".78rem",color:"var(--t2)"}}>
+            Estado actual: {isOpen?<span className="text-gr">🟢 Abierta ahora</span>:<span className="text-re">🔴 Cerrada</span>}
+          </div>
+          {hoursForm && (
+            <div className="overlay" onClick={e=>e.target===e.currentTarget&&setHoursForm(null)}>
+              <div className="modal">
+                <div className="modal-ttl">🕐 Editar Horarios</div>
+                <div style={{fontSize:".78rem",color:"var(--t2)",marginBottom:14}}>Formato: 9:00–18:00 o "Cerrado"</div>
+                {DAYS.map((d,i)=>(
+                  <div key={d} className="fg">
+                    <label>{DAYS_LABEL[i]}</label>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input value={hoursForm[d]||""} onChange={e=>setHoursForm({...hoursForm,[d]:e.target.value})} placeholder="9:00–18:00"/>
+                      <button className="btn btn-sec btn-xs" onClick={()=>setHoursForm({...hoursForm,[d]:"Cerrado"})}>Cerrado</button>
+                    </div>
+                  </div>
+                ))}
+                <div style={{display:"flex",gap:8,marginTop:8}}>
+                  <button className="btn btn-cy" onClick={saveHours}>💾 Guardar</button>
+                  <button className="btn btn-sec" onClick={()=>setHoursForm(null)}>Cancelar</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab==="profile" && (
+        <div style={{maxWidth:600}}>
+          <div className="sec-hd">
+            <div className="sec-ttl">🏪 Perfil de Tienda</div>
+            <button className="btn btn-cy btn-sm" onClick={()=>setProfileForm({name:store.name,address:store.address,phone:store.phone,description:store.description,emoji:store.emoji,category:store.category,tags:(store.tags||[]).join(","),theme:store.theme||"#00e5ff",instagram:store.socialMedia?.instagram||"",whatsapp:store.socialMedia?.whatsapp||""})}>✏️ Editar</button>
+          </div>
+          <div className="card">
+            <div style={{display:"flex",gap:16,marginBottom:16}}>
+              <span style={{fontSize:"3.5rem"}}>{store.emoji}</span>
+              <div>
+                <div style={{fontFamily:"var(--cond)",fontSize:"1.3rem",fontWeight:800}}>{store.name}</div>
+                <div style={{fontSize:".8rem",color:"var(--t2)",marginTop:4}}>{store.description}</div>
+              </div>
+            </div>
+            <div className="fg-row">
+              <div><label>Dirección</label><p style={{fontSize:".875rem",color:"var(--t1)"}}>{store.address}</p></div>
+              <div><label>Teléfono</label><p style={{fontSize:".875rem",color:"var(--t1)"}}>{store.phone}</p></div>
+            </div>
+            <div style={{marginTop:12,display:"flex",gap:12}}>
+              {store.socialMedia?.instagram && <span style={{fontSize:".8rem",color:"var(--t1)"}}>📸 {store.socialMedia.instagram}</span>}
+              {store.socialMedia?.whatsapp && <a href={`https://wa.me/57${store.socialMedia.whatsapp}`} target="_blank" style={{fontSize:".8rem",color:"var(--gr)"}}>💬 WhatsApp</a>}
+            </div>
+          </div>
+          {profileForm && (
+            <div className="overlay" onClick={e=>e.target===e.currentTarget&&setProfileForm(null)}>
+              <div className="modal modal-lg">
+                <div className="modal-ttl">✏️ Editar Perfil de Tienda</div>
+                <div className="fg"><label>Nombre de la tienda</label><input value={profileForm.name} onChange={e=>setProfileForm({...profileForm,name:e.target.value})}/></div>
+                <div className="fg-row">
+                  <div className="fg"><label>Dirección</label><input value={profileForm.address} onChange={e=>setProfileForm({...profileForm,address:e.target.value})}/></div>
+                  <div className="fg"><label>Teléfono</label><input value={profileForm.phone} onChange={e=>setProfileForm({...profileForm,phone:e.target.value})}/></div>
+                </div>
+                <div className="fg"><label>Descripción</label><textarea value={profileForm.description} onChange={e=>setProfileForm({...profileForm,description:e.target.value})} rows={2}/></div>
+                <div className="fg-row">
+                  <div className="fg"><label>Emoji / Logo</label><input value={profileForm.emoji} onChange={e=>setProfileForm({...profileForm,emoji:e.target.value})} style={{fontSize:"1.5rem",textAlign:"center"}}/></div>
+                  <div className="fg"><label>Color de marca</label><input type="color" value={profileForm.theme} onChange={e=>setProfileForm({...profileForm,theme:e.target.value})} style={{height:42,padding:4,cursor:"pointer"}}/></div>
+                </div>
+                <div className="fg-row">
+                  <div className="fg"><label>Instagram</label><input value={profileForm.instagram} onChange={e=>setProfileForm({...profileForm,instagram:e.target.value})} placeholder="@mitienda"/></div>
+                  <div className="fg"><label>WhatsApp (sin +57)</label><input value={profileForm.whatsapp} onChange={e=>setProfileForm({...profileForm,whatsapp:e.target.value})} placeholder="3001234567"/></div>
+                </div>
+                <div style={{display:"flex",gap:8,marginTop:8}}>
+                  <button className="btn btn-cy" onClick={saveProfile}>💾 Guardar perfil</button>
+                  <button className="btn btn-sec" onClick={()=>setProfileForm(null)}>Cancelar</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab==="page" && (
+        <div>
+          <div className="sec-hd">
+            <div>
+              <div className="sec-ttl">🌐 Mi Página Web</div>
+              <div style={{fontSize:".75rem",color:"var(--t2)",marginTop:2}}>Vista previa de cómo ven tu tienda los clientes</div>
+            </div>
+            <div className="subdomain-pill">🌐 {store.subdomain}.distrimed.co</div>
+          </div>
+          <div style={{background:"var(--bg1)",border:"1px solid var(--bd)",borderRadius:"var(--rxl)",overflow:"hidden"}}>
+            <div className="store-hero-bg" style={{background:`linear-gradient(135deg, ${store.theme||"#00e5ff"}18 0%, var(--bg2) 100%)`,borderBottom:"1px solid var(--bd)"}}>
+              <div style={{textAlign:"center",position:"relative",zIndex:1}}>
+                <div style={{fontSize:"5rem",marginBottom:8}}>{store.emoji}</div>
+                <div style={{fontFamily:"var(--cond)",fontSize:"2rem",fontWeight:900,color:store.theme||"var(--cy)"}}>{store.name}</div>
+                <div style={{fontSize:".9rem",color:"var(--t2)",marginTop:4}}>{store.description}</div>
+                <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12,flexWrap:"wrap"}}>
+                  {store.tags?.map(t=><span key={t} className="filter-chip" style={{cursor:"default"}}>{t}</span>)}
+                </div>
+              </div>
+            </div>
+            <div style={{padding:24}}>
+              <div style={{marginBottom:20}}>
+                <div style={{fontFamily:"var(--cond)",fontWeight:700,marginBottom:10,color:"var(--t1)"}}>HORARIOS</div>
+                <div className="store-hours-grid">
+                  {DAYS.map((d,i)=>{
+                    const hrs = store.hours?.[d];
+                    return (
+                      <div key={d} className="hours-chip">
+                        <div className="hours-day">{DAYS_LABEL[i]}</div>
+                        {hrs && hrs!=="Cerrado" ? <div className="hours-time">{hrs}</div> : <div className="hours-closed">Cerrado</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <div style={{fontFamily:"var(--cond)",fontWeight:700,marginBottom:10,color:"var(--t1)"}}>NUESTRAS PRENDAS</div>
+                <div className="prod-grid" style={{gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))"}}>
+                  {myProducts.slice(0,6).map(p=>(
+                    <div key={p.id} className="prod-card" style={{cursor:"default"}}>
+                      <div className="prod-thumb" style={{height:100}}>{p.emoji}</div>
+                      <div className="prod-body">
+                        <div className="prod-name" style={{fontSize:".85rem"}}>{p.name}</div>
+                        <div className="prod-price" style={{fontSize:".85rem"}}>{fmt(p.price)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{marginTop:20,padding:14,background:"var(--bg3)",borderRadius:"var(--r)",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+                <span>📍 {store.address}</span>
+                <span>📞 {store.phone}</span>
+                {store.socialMedia?.instagram && <span>📸 {store.socialMedia.instagram}</span>}
+                {store.socialMedia?.whatsapp && <a href={`https://wa.me/57${store.socialMedia.whatsapp}`} target="_blank" style={{color:"var(--gr)"}}>💬 WhatsApp</a>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
+          <div className="modal modal-lg">
+            <div className="modal-ttl">{editing?"✏️ Editar Prenda":"👗 Nueva Prenda"}</div>
+            <div className="fg"><label>Nombre *</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nombre de la prenda"/></div>
+            <div className="fg-row">
+              <div className="fg"><label>Precio COP *</label><input type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} placeholder="0"/></div>
+              <div className="fg"><label>Stock actual</label><input type="number" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})} placeholder="0"/></div>
+            </div>
+            <div className="fg-row">
+              <div className="fg"><label>Categoría</label>
+                <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+                  {FASHION_CATS.map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="fg"><label>Emoji</label><input value={form.emoji} onChange={e=>setForm({...form,emoji:e.target.value})} placeholder="👗" style={{fontSize:"1.5rem",textAlign:"center"}}/></div>
+            </div>
+            <div className="fg-row">
+              <div className="fg"><label>Marca / Brand</label><input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="Zara, Nike, etc."/></div>
+              <div className="fg"><label>Stock mínimo (alerta)</label><input type="number" value={form.minStock} onChange={e=>setForm({...form,minStock:e.target.value})}/></div>
+            </div>
+            <div className="fg-row">
+              <div className="fg"><label>Colores (separados por coma)</label><input value={form.colors} onChange={e=>setForm({...form,colors:e.target.value})} placeholder="Negro,Blanco,Azul"/></div>
+              <div className="fg"><label>Tallas (separadas por coma)</label><input value={form.sizes} onChange={e=>setForm({...form,sizes:e.target.value})} placeholder="XS,S,M,L,XL"/></div>
+            </div>
+            <div className="fg-row">
+              <div className="fg"><label>Descuento (%)</label><input type="number" value={form.discount} onChange={e=>setForm({...form,discount:e.target.value})} placeholder="0" min="0" max="90"/></div>
+              <div className="fg" style={{justifyContent:"flex-end",paddingBottom:4}}>
+                <label>Marcar como NUEVO</label>
+                <label className="toggle-wrap" style={{cursor:"pointer",marginTop:8}}>
+                  <span className="toggle"><input type="checkbox" checked={!!form.isNew} onChange={e=>setForm({...form,isNew:e.target.checked})}/><span className="toggle-slider"/></span>
+                  <span style={{fontSize:".85rem"}}>{form.isNew?"✓ Es producto nuevo":"No es nuevo"}</span>
+                </label>
+              </div>
+            </div>
+            <div className="fg"><label>Descripción</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={2} placeholder="Descripción breve de la prenda..."/></div>
+            <div style={{display:"flex",gap:8,marginTop:8}}>
+              <button className="btn btn-cy" onClick={save}>💾 Guardar</button>
+              <button className="btn btn-sec" onClick={()=>setShowModal(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── SUPERADMIN ─── */
+function SuperAdmin({ db, setDb }) {
+  const [tab,setTab] = useState("dashboard");
+  const [showStoreModal,setShowStoreModal] = useState(false);
+  const [editingStore,setEditingStore] = useState(null);
+  const [storeForm,setStoreForm] = useState({name:"",address:"",phone:"",lat:"6.2442",lng:"-75.5812",category:"Ropa Mujer",emoji:"🏪",description:"",subdomain:"",theme:"#00e5ff",templateId:""});
+  const [alert,setAlert] = useState(null);
+  const [search,setSearch] = useState("");
+  const [showTemplates,setShowTemplates] = useState(false);
+
+  const showAlert = (type,msg) => { setAlert({type,msg}); setTimeout(()=>setAlert(null),3500); };
+
+  const totalRev = db.orders.reduce((s,o)=>s+o.total,0);
+  const totalProds = db.products.length;
+  const activeStores = db.stores.filter(s=>s.active).length;
+  const clients = db.users.filter(u=>u.role==="client").length;
+  const totalSales = db.stores.reduce((s,st)=>s+st.totalSales,0);
+
+  const toggleStore = id => { setDb({...db,stores:db.stores.map(s=>s.id===id?{...s,active:!s.active}:s)}); showAlert("ok","Estado de tienda actualizado"); };
+  const toggleUser = id => { setDb({...db,users:db.users.map(u=>u.id===id?{...u,active:!u.active}:u)}); showAlert("ok","Estado de usuario actualizado"); };
+
+  const openNewStore = () => {
+    setEditingStore(null);
+    setStoreForm({name:"",address:"",phone:"",lat:"6.2442",lng:"-75.5812",category:"Ropa Mujer",emoji:"🏪",description:"",subdomain:"",theme:"#00e5ff",templateId:""});
+    setShowStoreModal(true);
+  };
+
+  const openEditStore = s => {
+    setEditingStore(s);
+    setStoreForm({name:s.name,address:s.address,phone:s.phone,lat:String(s.lat),lng:String(s.lng),category:s.category,emoji:s.emoji,description:s.description,subdomain:s.subdomain||"",theme:s.theme||"#00e5ff",templateId:""});
+    setShowStoreModal(true);
+  };
+
+  const applyTemplate = (t) => { setStoreForm(f=>({...f,emoji:t.emoji,theme:t.primaryColor,templateId:t.id})); setShowTemplates(false); };
+
+  const saveStore = () => {
+    if(!storeForm.name||!storeForm.address) return showAlert("err","Nombre y dirección requeridos");
+    if(editingStore) {
+      setDb({...db,stores:db.stores.map(s=>s.id===editingStore.id?{...s,...storeForm,lat:+storeForm.lat,lng:+storeForm.lng}:s)});
+      showAlert("ok","✅ Tienda actualizada");
+    } else {
+      const ns = {id:genId(),...storeForm,lat:+storeForm.lat,lng:+storeForm.lng,active:true,rating:0,totalSales:0,ordersCount:0,ownerId:null,hours:{lun:"9:00–18:00",mar:"9:00–18:00",mie:"9:00–18:00",jue:"9:00–18:00",vie:"9:00–18:00",sab:"9:00–16:00",dom:"Cerrado"},tags:[storeForm.category],socialMedia:{instagram:"",whatsapp:""},website:`${storeForm.subdomain||"nueva"}.distrimed.co`,createdAt:new Date().toISOString().slice(0,10)};
+      setDb({...db,stores:[...db.stores,ns]});
+      showAlert("ok","✅ Tienda creada exitosamente");
+    }
+    setShowStoreModal(false);
+  };
+
+  const deleteStore = id => { if(!confirm("¿Eliminar esta tienda permanentemente?")) return; setDb({...db,stores:db.stores.filter(s=>s.id!==id),products:db.products.filter(p=>p.storeId!==id)}); showAlert("ok","Tienda eliminada"); };
+  const filteredStores = db.stores.filter(s=>s.name.toLowerCase().includes(search.toLowerCase())||s.address.toLowerCase().includes(search.toLowerCase())||s.category.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div>
+      {alert && <div className={`alert ${alert.type==="ok"?"al-ok":"al-err"}`}>{alert.msg}</div>}
+
+      <div className="tabs">
+        {[["dashboard","⚡ Dashboard"],["stores","🏪 Tiendas"],["products","👗 Catálogo"],["users","👥 Usuarios"],["templates","🎨 Templates"]].map(([k,l])=>(
+          <button key={k} className={`tab${tab===k?" on":""}`} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+
+      {tab==="dashboard" && (
+        <div>
+          <div className="stats-grid">
+            <div className="stat"><div className="stat-ico">🏪</div><div className="stat-val text-cy">{db.stores.length}</div><div className="stat-lbl">Tiendas totales</div><div className="stat-sub">{activeStores} activas · {db.stores.length-activeStores} inactivas</div></div>
+            <div className="stat"><div className="stat-ico">👗</div><div className="stat-val text-pu">{totalProds}</div><div className="stat-lbl">Productos</div><div className="stat-sub">{db.products.filter(p=>p.stock===0).length} agotados</div></div>
+            <div className="stat"><div className="stat-ico">💰</div><div className="stat-val text-gr">{fmtK(totalSales)}</div><div className="stat-lbl">Ventas acumuladas</div><div className="stat-sub">{fmtK(totalRev)} en pedidos</div></div>
+            <div className="stat"><div className="stat-ico">📋</div><div className="stat-val text-ye">{db.orders.length}</div><div className="stat-lbl">Pedidos totales</div><div className="stat-sub">{db.orders.filter(o=>o.status==="pending").length} pendientes</div></div>
+            <div className="stat"><div className="stat-ico">👥</div><div className="stat-val">{db.users.length}</div><div className="stat-lbl">Usuarios</div><div className="stat-sub">{clients} clientes</div></div>
+            <div className="stat"><div className="stat-ico">📊</div><div className="stat-val text-or">{db.orders.length>0?fmtK(totalRev/db.orders.length):"$0"}</div><div className="stat-lbl">Ticket promedio</div><div className="stat-sub">por pedido</div></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
+            <div className="card">
+              <div style={{fontFamily:"var(--cond)",fontSize:".8rem",fontWeight:700,color:"var(--t2)",marginBottom:10}}>VENTAS 12 MESES</div>
+              <MiniChart data={db.salesByMonth} color="var(--cy)"/>
+            </div>
+            <div className="card">
+              <div style={{fontFamily:"var(--cond)",fontSize:".8rem",fontWeight:700,color:"var(--t2)",marginBottom:10}}>TOP TIENDAS POR VENTAS</div>
+              {[...db.stores].sort((a,b)=>b.totalSales-a.totalSales).slice(0,5).map((s,i)=>(
+                <div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--bd)",fontSize:".78rem"}}>
+                  <span style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontFamily:"var(--mono)",color:"var(--t2)",width:16}}>#{i+1}</span>{s.emoji} {s.name}</span>
+                  <span style={{fontFamily:"var(--mono)",color:"var(--cy)"}}>{fmtK(s.totalSales)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div style={{fontFamily:"var(--cond)",fontSize:".8rem",fontWeight:700,color:"var(--t2)",marginBottom:10}}>ACTIVIDAD RECIENTE</div>
+            {db.activity.map((a,i)=>(
+              <div key={i} className="feed-item">
+                <div className="feed-dot" style={{background:a.color}}/>
+                <div style={{flex:1}}><div>{a.msg}</div></div>
+                <span style={{color:"var(--t2)",fontSize:".72rem",whiteSpace:"nowrap"}}>{a.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab==="stores" && (
+        <div>
+          <div className="sec-hd">
+            <div>
+              <div className="sec-ttl">🏪 Gestión de Tiendas ({db.stores.length})</div>
+              <div style={{fontSize:".75rem",color:"var(--t2)",marginTop:2}}>{activeStores} activas · {db.stores.length-activeStores} inactivas</div>
+            </div>
+            <button className="btn btn-cy" onClick={openNewStore}>+ Nueva tienda</button>
+          </div>
+          <input placeholder="🔍 Buscar tienda por nombre, dirección, categoría..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:14}}/>
+          <div className="tbl-wrap">
+            <table>
+              <thead><tr><th>Tienda</th><th>Categoría</th><th>Subdominio</th><th>Productos</th><th>Ventas</th><th>Rating</th><th>Estado</th><th>Horario</th><th>Acciones</th></tr></thead>
+              <tbody>
+                {filteredStores.map(s=>{
+                  const prods = db.products.filter(p=>p.storeId===s.id);
+                  const open = isStoreOpen(s);
+                  return (
+                    <tr key={s.id}>
+                      <td>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:"1.4rem"}}>{s.emoji}</span>
+                          <div>
+                            <div style={{fontFamily:"var(--cond)",fontWeight:700}}>{s.name}</div>
+                            <div style={{fontSize:".7rem",color:"var(--t2)"}}>{s.address}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className="pill">{s.category}</span></td>
+                      <td><span className="subdomain-pill" style={{fontSize:".62rem"}}>🌐 {s.subdomain}.distrimed.co</span></td>
+                      <td><span style={{fontFamily:"var(--mono)"}}>{prods.length}</span></td>
+                      <td><span style={{fontFamily:"var(--mono)",color:"var(--cy)"}}>{fmtK(s.totalSales)}</span></td>
+                      <td><span style={{color:"var(--ye)"}}>⭐ {s.rating}</span></td>
+                      <td>
+                        <label className="toggle-wrap" style={{cursor:"pointer",gap:6}}>
+                          <span className="toggle"><input type="checkbox" checked={s.active} onChange={()=>toggleStore(s.id)}/><span className="toggle-slider"/></span>
+                          <span className={`badge ${s.active?"b-ok":"b-off"}`}>{s.active?"ON":"OFF"}</span>
+                        </label>
+                      </td>
+                      <td><span className={`badge ${open?"b-ok":"b-off"}`} style={{fontSize:".6rem"}}>{open?"ABIERTA":"CERRADA"}</span></td>
+                      <td>
+                        <div style={{display:"flex",gap:4}}>
+                          <button className="btn btn-sec btn-xs" onClick={()=>openEditStore(s)}>✏️</button>
+                          <button className="btn btn-re btn-xs" onClick={()=>deleteStore(s.id)}>🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {tab==="products" && (
+        <div>
+          <div className="sec-hd">
+            <div className="sec-ttl">👗 Catálogo Global ({db.products.length} prendas)</div>
+          </div>
+          <div className="tbl-wrap">
+            <table>
+              <thead><tr><th>Prenda</th><th>Tienda</th><th>Precio</th><th>Stock</th><th>Ventas</th><th>Rating</th><th>Estado</th></tr></thead>
+              <tbody>
+                {db.products.map(p=>{
+                  const store = db.stores.find(s=>s.id===p.storeId);
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:"1.3rem"}}>{p.emoji}</span>
+                          <div>
+                            <div style={{fontFamily:"var(--cond)",fontWeight:700}}>{p.name}</div>
+                            <div style={{fontSize:".7rem",color:"var(--t2)"}}>{p.category} · {p.brand}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{fontSize:".78rem"}}>{store?.emoji} {store?.name||"—"}</td>
+                      <td><span className="mono text-cy">{fmt(p.price)}</span></td>
+                      <td><span className={p.stock===0?"text-re":p.stock<=p.minStock?"text-ye":"text-gr"} style={{fontFamily:"var(--mono)",fontWeight:700}}>{p.stock}</span></td>
+                      <td><span style={{color:"var(--t1)"}}>{p.sales}</span></td>
+                      <td><span style={{color:"var(--ye)",fontFamily:"var(--mono)"}}>{p.rating} ⭐</span></td>
+                      <td>{p.isNew&&<span className="badge b-cy" style={{fontSize:".55rem"}}>NUEVO</span>}{p.discount>0&&<span className="badge b-or" style={{fontSize:".55rem",marginLeft:2}}>-{p.discount}%</span>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {tab==="users" && (
+        <div>
+          <div className="sec-hd">
+            <div className="sec-ttl">👥 Gestión de Usuarios ({db.users.length})</div>
+          </div>
+          <div className="tbl-wrap">
+            <table>
+              <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Tienda</th><th>Registrado</th><th>Estado</th></tr></thead>
+              <tbody>
+                {db.users.map(u=>{
+                  const store = u.storeId ? db.stores.find(s=>s.id===u.storeId) : null;
+                  return (
+                    <tr key={u.id}>
+                      <td>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div className={`av ${u.role==="superadmin"?"av-cy":u.role==="store"?"av-or":"av-gr"}`}>{u.name.slice(0,2).toUpperCase()}</div>
+                          <span style={{fontFamily:"var(--cond)",fontWeight:600}}>{u.name}</span>
+                        </div>
+                      </td>
+                      <td style={{fontFamily:"var(--mono)",fontSize:".78rem",color:"var(--t1)"}}>{u.email}</td>
+                      <td><span className={`badge ${u.role==="superadmin"?"b-cy":u.role==="store"?"b-or":"b-ok"}`}>{u.role==="superadmin"?"👑 Admin":u.role==="store"?"🏪 Tienda":"👤 Cliente"}</span></td>
+                      <td style={{fontSize:".78rem"}}>{store?`${store.emoji} ${store.name}`:"—"}</td>
+                      <td style={{fontSize:".75rem",color:"var(--t2)"}}>{u.createdAt||"—"}</td>
+                      <td>
+                        {u.role!=="superadmin" ? (
+                          <label className="toggle-wrap" style={{cursor:"pointer",gap:6}}>
+                            <span className="toggle"><input type="checkbox" checked={u.active} onChange={()=>toggleUser(u.id)}/><span className="toggle-slider"/></span>
+                            <span className={`badge ${u.active?"b-ok":"b-off"}`}>{u.active?"ON":"OFF"}</span>
+                          </label>
+                        ) : <span className="badge b-cy">PROTEGIDO</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {tab==="templates" && (
+        <div>
+          <div className="sec-hd">
+            <div>
+              <div className="sec-ttl">🎨 Templates de Tiendas</div>
+              <div style={{fontSize:".75rem",color:"var(--t2)",marginTop:2}}>Plantillas predefinidas para nuevas tiendas</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:14}}>
+            {db.templates.map(t=>(
+              <div key={t.id} className="card" style={{borderColor:t.primaryColor+"44",cursor:"pointer"}} onClick={()=>{applyTemplate(t);setTab("stores");openNewStore()}}>
+                <div style={{fontSize:"2.5rem",marginBottom:10}}>{t.emoji}</div>
+                <div style={{fontFamily:"var(--cond)",fontSize:"1.1rem",fontWeight:800,marginBottom:4,color:t.primaryColor}}>{t.name}</div>
+                <div style={{fontSize:".8rem",color:"var(--t2)",marginBottom:12}}>{t.description}</div>
+                <div style={{width:"100%",height:4,borderRadius:2,background:t.primaryColor,opacity:.7}}/>
+                <div style={{marginTop:12}}>
+                  <button className="btn btn-sec btn-sm w-full" onClick={e=>{e.stopPropagation();applyTemplate(t)}}>✓ Usar template</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="section-divider"><span>Configuración global</span></div>
+          <div className="card" style={{maxWidth:480}}>
+            <div style={{fontFamily:"var(--cond)",fontWeight:800,marginBottom:12}}>⚙️ Configuración de red</div>
+            <div className="fg"><label>Dominio base</label><input defaultValue="distrimed.co" readOnly style={{opacity:.6}}/></div>
+            <div className="fg"><label>Total de subdominios activos</label><input value={db.stores.filter(s=>s.active&&s.subdomain).length} readOnly style={{opacity:.6}}/></div>
+            <div style={{marginTop:8,padding:10,background:"var(--bg3)",borderRadius:"var(--r)",fontSize:".78rem",color:"var(--t2)"}}>
+              ℹ️ Cada tienda activa tiene su subdominio en <span style={{color:"var(--pu)"}}>[subdomain].distrimed.co</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showStoreModal && (
+        <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowStoreModal(false)}>
+          <div className="modal modal-lg">
+            <div className="modal-ttl">{editingStore?"✏️ Editar Tienda":"🏪 Nueva Tienda"}</div>
+            <div style={{marginBottom:14,display:"flex",gap:8,flexWrap:"wrap"}}>
+              <button className="btn btn-pu btn-sm" onClick={()=>setShowTemplates(!showTemplates)}>🎨 Aplicar template</button>
+              {storeForm.templateId && <span className="badge b-pu">Template aplicado ✓</span>}
+            </div>
+            {showTemplates && (
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14,padding:12,background:"var(--bg3)",borderRadius:"var(--r)"}}>
+                {db.templates.map(t=>(
+                  <button key={t.id} className="btn btn-sec btn-xs" onClick={()=>applyTemplate(t)}>{t.emoji} {t.name}</button>
+                ))}
+              </div>
+            )}
+            <div className="fg"><label>Nombre de la tienda *</label><input value={storeForm.name} onChange={e=>setStoreForm({...storeForm,name:e.target.value})} placeholder="Nombre completo"/></div>
+            <div className="fg-row">
+              <div className="fg"><label>Dirección *</label><input value={storeForm.address} onChange={e=>setStoreForm({...storeForm,address:e.target.value})} placeholder="Cra/Cll #-#, Barrio"/></div>
+              <div className="fg"><label>Teléfono</label><input value={storeForm.phone} onChange={e=>setStoreForm({...storeForm,phone:e.target.value})} placeholder="604-xxx-xxxx"/></div>
+            </div>
+            <div className="fg-row">
+              <div className="fg"><label>Categoría principal</label>
+                <select value={storeForm.category} onChange={e=>setStoreForm({...storeForm,category:e.target.value})}>
+                  {["Ropa Mujer","Ropa Hombre","Ropa Niños","Streetwear","Ropa Premium","Jeans & Denim","Accesorios","Calzado","Deportivo","Vintage","Lencería"].map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="fg"><label>Subdominio</label>
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <input value={storeForm.subdomain} onChange={e=>setStoreForm({...storeForm,subdomain:e.target.value.toLowerCase().replace(/[^a-z0-9]/g,"")})} placeholder="mitienda"/>
+                  <span style={{color:"var(--pu)",fontFamily:"var(--mono)",fontSize:".78rem",whiteSpace:"nowrap"}}>.distrimed.co</span>
+                </div>
+              </div>
+            </div>
+            <div className="fg-row-3">
+              <div className="fg"><label>Emoji / Ícono</label><input value={storeForm.emoji} onChange={e=>setStoreForm({...storeForm,emoji:e.target.value})} placeholder="🏪" style={{fontSize:"1.5rem",textAlign:"center"}}/></div>
+              <div className="fg"><label>Color de marca</label><input type="color" value={storeForm.theme} onChange={e=>setStoreForm({...storeForm,theme:e.target.value})} style={{height:42,padding:4,cursor:"pointer"}}/></div>
+              <div className="fg"><label>Vista previa</label><div style={{height:42,display:"flex",alignItems:"center",gap:6,padding:"0 10px",background:`${storeForm.theme}22`,border:`1px solid ${storeForm.theme}66`,borderRadius:"var(--r)"}}><span style={{fontSize:"1.2rem"}}>{storeForm.emoji||"🏪"}</span><span style={{fontFamily:"var(--cond)",fontWeight:700,color:storeForm.theme}}>{storeForm.name||"Mi Tienda"}</span></div></div>
+            </div>
+            <div className="fg-row">
+              <div className="fg"><label>Latitud</label><input value={storeForm.lat} onChange={e=>setStoreForm({...storeForm,lat:e.target.value})} placeholder="6.2442"/></div>
+              <div className="fg"><label>Longitud</label><input value={storeForm.lng} onChange={e=>setStoreForm({...storeForm,lng:e.target.value})} placeholder="-75.5812"/></div>
+            </div>
+            <div className="fg"><label>Descripción</label><textarea value={storeForm.description} onChange={e=>setStoreForm({...storeForm,description:e.target.value})} rows={2} placeholder="Breve descripción de la tienda..."/></div>
+            <div style={{display:"flex",gap:8,marginTop:8}}>
+              <button className="btn btn-cy" onClick={saveStore}>💾 {editingStore?"Guardar cambios":"Crear tienda"}</button>
+              <button className="btn btn-sec" onClick={()=>setShowStoreModal(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── MAIN APP ─── */
+export default function App() {
+  const [db,setDb] = useState(()=>JSON.parse(JSON.stringify(DB)));
+  const [user,setUser] = useState(null);
+  const [page,setPage] = useState("catalog");
+  const [sideOpen,setSideOpen] = useState(false);
+  const [userLoc,setUserLoc] = useState(null);
+  const [locLoading,setLocLoading] = useState(false);
+
+  useEffect(()=>{
+    if(user){
+      if(user.role==="superadmin") setPage("admin");
+      else if(user.role==="store") setPage("store");
+      else setPage("catalog");
+    }
+  },[user]);
+
+  const detectLoc = useCallback(()=>{
+    setLocLoading(true);
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        pos=>{ setUserLoc({lat:pos.coords.latitude,lng:pos.coords.longitude}); setLocLoading(false); setPage("map"); },
+        ()=>{ setUserLoc({lat:6.2442,lng:-75.5812}); setLocLoading(false); setPage("map"); },
+        {timeout:8000}
+      );
+    } else {
+      setUserLoc({lat:6.2442,lng:-75.5812}); setLocLoading(false); setPage("map");
+    }
+  },[]);
+
+  if(!user) return <><style>{CSS}</style><LoginPage onLogin={u=>setUser(u)}/></>;
+
+  const navClient = [
+    {id:"catalog",icon:"👗",label:"Catálogo"},
+    {id:"map",icon:"🗺️",label:"Mapa / Tiendas"},
+    {id:"orders",icon:"📋",label:"Mis Pedidos"},
+  ];
+  const navStore = [{id:"store",icon:"🏪",label:"Mi Tienda"}];
+  const navAdmin = [
+    {id:"admin",icon:"⚡",label:"Dashboard"},
+    {id:"map",icon:"🗺️",label:"Mapa Global"},
+  ];
+
+  const navItems = user.role==="superadmin"?navAdmin:user.role==="store"?navStore:navClient;
+  const pageTitle = {catalog:"Catálogo de Moda",map:"Mapa de Tiendas",orders:"Mis Pedidos",store:"Panel de Tienda",admin:"Superadmin"}[page]||page;
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="shell">
+        <div className={`mob-bg${sideOpen?" show":""}`} onClick={()=>setSideOpen(false)}/>
+
+        <aside className={`sidebar${sideOpen?" open":""}`}>
+          <div className="logo-area">
+            <div className="logo">👗 DistriMed</div>
+            <div className="logo-sub">Moda & distribución · Medellín</div>
+          </div>
+          <div className="nav-area">
+            <div className="nav-sec-lbl">Navegación</div>
+            {navItems.map(n=>(
+              <button key={n.id} className={`nav-btn${page===n.id?" on":""}`} onClick={()=>{setPage(n.id);setSideOpen(false)}}>
+                <span className="nav-ico">{n.icon}</span>{n.label}
+              </button>
+            ))}
+            {user.role==="client" && (
+              <>
+                <div className="nav-sec-lbl" style={{marginTop:8}}>GPS</div>
+                <button className="nav-btn" onClick={()=>{detectLoc();setSideOpen(false)}} style={{color:userLoc?"var(--gr)":"var(--t1)"}}>
+                  <span className="nav-ico">{locLoading?"⏳":"📍"}</span>
+                  {locLoading?"Detectando...":userLoc?"✓ Ubicado":"Detectar ubicación"}
+                </button>
+              </>
+            )}
+          </div>
+          <div className="sidebar-foot">
+            <div className="user-chip">
+              <div className={`av ${user.role==="superadmin"?"av-cy":user.role==="store"?"av-or":"av-gr"}`}>
+                {user.name.slice(0,2).toUpperCase()}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div className="nm" style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{user.name}</div>
+                <div className="rl">{user.role==="superadmin"?"👑 Superadmin":user.role==="store"?"🏪 Tienda":"👤 Cliente"}</div>
+              </div>
+              <button className="ico-btn" style={{fontSize:".75rem",padding:"5px 8px"}} onClick={()=>setUser(null)} title="Cerrar sesión">↩</button>
+            </div>
+          </div>
+        </aside>
+
+        <main className="main">
+          <div className="topbar">
+            <button className="burger" onClick={()=>setSideOpen(o=>!o)}>☰</button>
+            <div className="topbar-ttl">{pageTitle}</div>
+            {user.role==="client" && page!=="map" && (
+              <button className="btn btn-sec btn-sm" onClick={detectLoc} style={{marginLeft:"auto"}}>
+                {locLoading?<span className="spin">⏳</span>:"📍"} {locLoading?"Detectando...":"Ubicarme"}
+              </button>
+            )}
+            {userLoc && user.role==="client" && <span className="badge b-ok" style={{marginLeft:page!=="map"?"4px":"auto"}}>📍 GPS ✓</span>}
+            {user.role==="store" && (
+              <div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}>
+                {(()=>{ const s=db.stores.find(st=>st.id===user.storeId); return s?<><span className="subdomain-pill" style={{fontSize:".65rem"}}>🌐 {s.subdomain}.distrimed.co</span><span className={`badge ${s.active?"b-ok":"b-off"}`}>{s.active?"ACTIVA":"INACTIVA"}</span></>:null; })()}
+              </div>
+            )}
+          </div>
+
+          <div className="content">
+            {page==="catalog" && <Catalog user={user} db={db} setDb={setDb}/>}
+            {page==="map" && <MapView stores={db.stores} userLoc={userLoc} db={db}/>}
+            {page==="orders" && <Orders user={user} db={db}/>}
+            {page==="store" && <StoreAdmin user={user} db={db} setDb={setDb}/>}
+            {page==="admin" && <SuperAdmin db={db} setDb={setDb}/>}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
