@@ -372,79 +372,98 @@ function MiniChart({ data, color="var(--cy)", height=80 }) {
 }
 
 /* ─── LOGIN PAGE ─── */
+async function safeJson(res) {
+  try { return await res.json(); } catch { return {}; }
+}
+
+function mapRealUser(realUser) {
+  let appUser = DB.users.find(u => u.email === realUser.email);
+  if (!appUser) {
+    const role = realUser.role === "customer" ? "client" : realUser.role;
+    appUser = { id: genId(), name: realUser.name, email: realUser.email, password: "", role, active: true, createdAt: realUser.createdAt || new Date().toISOString().slice(0, 10) };
+    if (realUser.storeId && realUser.role === "store") appUser.storeId = "s1";
+    DB.users.push(appUser);
+  }
+  return appUser;
+}
+
 function LoginPage({ onLogin }) {
-  const [tab,setTab] = useState("login");
-  const [email,setEmail] = useState("");
-  const [password,setPassword] = useState("");
-  const [name,setName] = useState("");
-  const [err,setErr] = useState("");
-  const [loading,setLoading] = useState(false);
-  const dbRef = useRef(DB);
+  const [tab, setTab] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState("");
+
+  const doLogin = async (em, pw) => {
+    let res, data;
+    try {
+      res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: em.toLowerCase().trim(), password: pw }),
+      });
+      data = await safeJson(res);
+    } catch {
+      return "No se pudo conectar con el servidor. Verifica tu conexión.";
+    }
+    if (!res.ok) return data.message || "Correo o contraseña incorrectos";
+    localStorage.setItem("distrimed_token", data.token);
+    onLogin(mapRealUser(data.user));
+    return null;
+  };
 
   const submit = async () => {
     setErr("");
-    if(tab==="login"){
+    if (tab === "login") {
+      if (!email || !password) return setErr("Completa correo y contraseña");
       setLoading(true);
-      try {
-        const res = await fetch("/api/auth/login", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({email:email.toLowerCase().trim(),password}),
-        });
-        const data = await res.json();
-        if(!res.ok) return setErr(data.message||"Credenciales incorrectas");
-        localStorage.setItem("distrimed_token", data.token);
-        const realUser = data.user;
-        // Map real API user to app-compatible mock user for rich dashboard data
-        let appUser = dbRef.current.users.find(u=>u.email===realUser.email);
-        if(!appUser) {
-          // New user not in mock DB — create a compatible entry
-          const role = realUser.role==="customer"?"client":realUser.role;
-          appUser = {id:genId(),name:realUser.name,email:realUser.email,password:"",role,active:true,createdAt:realUser.createdAt||new Date().toISOString().slice(0,10)};
-          if(realUser.storeId) appUser.storeId = realUser.role==="store"?"s1":undefined;
-          DB.users.push(appUser);
-        }
-        onLogin(appUser);
-      } catch(e) {
-        setErr("Error de conexión con el servidor");
-      } finally {
-        setLoading(false);
-      }
+      const e = await doLogin(email, password);
+      setLoading(false);
+      if (e) setErr(e);
     } else {
-      if(!name||!email||!password) return setErr("Completa todos los campos");
-      if(password.length<6) return setErr("La contraseña debe tener al menos 6 caracteres");
+      if (!name || !email || !password) return setErr("Completa todos los campos");
+      if (password.length < 6) return setErr("La contraseña debe tener al menos 6 caracteres");
       setLoading(true);
+      let regRes, regData;
       try {
-        const regRes = await fetch("/api/users", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({name,email:email.toLowerCase().trim(),password,role:"customer"}),
+        regRes = await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email: email.toLowerCase().trim(), password, role: "customer" }),
         });
-        if(!regRes.ok) {
-          const regData = await regRes.json();
-          return setErr(regData.message||"Error al registrarse");
-        }
-        const loginRes = await fetch("/api/auth/login", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({email:email.toLowerCase().trim(),password}),
-        });
-        const loginData = await loginRes.json();
-        if(!loginRes.ok) return setErr("Registro exitoso, pero no se pudo iniciar sesión");
-        localStorage.setItem("distrimed_token", loginData.token);
-        const realUser = loginData.user;
-        const nu = {id:genId(),name:realUser.name,email:realUser.email,password:"",role:"client",active:true,createdAt:realUser.createdAt||new Date().toISOString().slice(0,10)};
-        DB.users.push(nu);
-        onLogin(nu);
-      } catch(e) {
-        setErr("Error de conexión con el servidor");
-      } finally {
+        regData = await safeJson(regRes);
+      } catch {
         setLoading(false);
+        return setErr("No se pudo conectar con el servidor. Verifica tu conexión.");
       }
+      if (!regRes.ok) {
+        setLoading(false);
+        return setErr(regData.message || "Error al registrarse");
+      }
+      const e = await doLogin(email, password);
+      setLoading(false);
+      if (e) setErr("Cuenta creada. " + e);
     }
   };
-  const fill = (e,p) => { setEmail(e); setPassword(p); };
-  const kp = e => e.key==="Enter"&&submit();
+
+  const quickLogin = async (em, pw, label) => {
+    setErr("");
+    setDemoLoading(em);
+    const e = await doLogin(em, pw);
+    setDemoLoading("");
+    if (e) setErr(e);
+  };
+
+  const kp = e => e.key === "Enter" && submit();
+
+  const DEMO = [
+    ["admin@distri.co", "admin123", "🔴", "Superadmin"],
+    ["norte@distri.co", "tienda123", "🟠", "Tienda Norte"],
+    ["poblado@distri.co", "tienda123", "🟣", "Fashion Poblado"],
+    ["pedro@gmail.com", "pass123", "🟢", "Cliente Pedro"],
+  ];
 
   return (
     <div className="login-pg">
@@ -464,22 +483,38 @@ function LoginPage({ onLogin }) {
         </div>
 
         <div className="demo-box">
-          <div style={{marginBottom:6,fontWeight:700,color:"var(--t0)",fontFamily:"var(--cond)"}}>⚡ Accesos rápidos demo:</div>
-          {[
-            ["admin@distri.co","admin123","🔴 Superadmin"],
-            ["norte@distri.co","tienda123","🟠 Tienda Norte"],
-            ["poblado@distri.co","tienda123","🟣 Fashion Poblado"],
-            ["pedro@gmail.com","pass123","🟢 Cliente Pedro"],
-          ].map(([e,p,l])=>(
-            <div key={e} style={{cursor:"pointer",padding:"3px 0",display:"flex",alignItems:"center",gap:8}} onClick={()=>fill(e,p)}>
-              <b>{l}</b> <span style={{color:"var(--t2)"}}>→ {e}</span>
-            </div>
-          ))}
+          <div style={{marginBottom:8,fontWeight:700,color:"var(--t0)",fontFamily:"var(--cond)"}}>⚡ Acceso directo demo:</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {DEMO.map(([em, pw, icon, label]) => (
+              <button
+                key={em}
+                disabled={!!demoLoading || loading}
+                onClick={() => quickLogin(em, pw, label)}
+                style={{
+                  background: demoLoading === em ? "rgba(0,255,204,0.15)" : "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                  cursor: "pointer",
+                  color: "var(--t1)",
+                  textAlign: "left",
+                  fontSize: "0.82rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 0.2s",
+                }}
+              >
+                <span style={{fontSize:"1rem"}}>{demoLoading === em ? "⏳" : icon}</span>
+                <span style={{fontWeight:600}}>{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {err && <div className="alert al-err">⚠️ {err}</div>}
 
-        {tab==="register" && (
+        {tab === "register" && (
           <div className="fg">
             <label>Nombre completo</label>
             <input placeholder="Tu nombre" value={name} onChange={e=>setName(e.target.value)} onKeyPress={kp}/>
@@ -494,8 +529,8 @@ function LoginPage({ onLogin }) {
           <input type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)} onKeyPress={kp}/>
         </div>
 
-        <button className="btn btn-cy w-full" style={{fontSize:"1rem",padding:"12px"}} onClick={submit} disabled={loading}>
-          {loading?"⏳ Verificando...":tab==="login"?"🚀 Entrar":"✨ Crear cuenta"}
+        <button className="btn btn-cy w-full" style={{fontSize:"1rem",padding:"12px"}} onClick={submit} disabled={loading || !!demoLoading}>
+          {loading ? "⏳ Verificando..." : tab === "login" ? "🚀 Entrar" : "✨ Crear cuenta"}
         </button>
       </div>
     </div>
