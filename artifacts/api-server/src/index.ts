@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import { usersTable, storesTable, productsTable, salesTable, ratingsTable } from "@workspace/db/schema";
 import bcrypt from "bcryptjs";
 
@@ -16,6 +16,65 @@ const port = Number(rawPort);
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+async function ensureSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stores (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      address text NOT NULL,
+      phone text NOT NULL,
+      email text NOT NULL,
+      lat real NOT NULL,
+      lng real NOT NULL,
+      active boolean NOT NULL DEFAULT true,
+      description text NOT NULL DEFAULT '',
+      image_url text,
+      total_sales numeric(12,2) NOT NULL DEFAULT 0,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS users (
+      id serial PRIMARY KEY,
+      email text NOT NULL UNIQUE,
+      password text NOT NULL,
+      name text NOT NULL,
+      role text NOT NULL DEFAULT 'customer',
+      store_id integer,
+      active boolean NOT NULL DEFAULT true,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS products (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      description text NOT NULL,
+      price numeric(10,2) NOT NULL,
+      category text NOT NULL,
+      image_url text,
+      stock integer NOT NULL DEFAULT 0,
+      store_id integer NOT NULL,
+      active boolean NOT NULL DEFAULT true,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS sales (
+      id serial PRIMARY KEY,
+      product_id integer NOT NULL,
+      store_id integer NOT NULL,
+      user_id integer,
+      quantity integer NOT NULL DEFAULT 1,
+      amount numeric(10,2) NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS ratings (
+      id serial PRIMARY KEY,
+      product_id integer NOT NULL,
+      user_id integer NOT NULL,
+      stars integer NOT NULL,
+      comment text,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+  `);
+  logger.info("Schema ensured (tables created if missing)");
 }
 
 async function autoSeedIfEmpty() {
@@ -93,12 +152,18 @@ async function autoSeedIfEmpty() {
   }
 }
 
-autoSeedIfEmpty().then(() => {
-  app.listen(port, (err) => {
-    if (err) {
-      logger.error({ err }, "Error listening on port");
-      process.exit(1);
-    }
-    logger.info({ port }, "Server listening");
+ensureSchema()
+  .then(() => autoSeedIfEmpty())
+  .then(() => {
+    app.listen(port, (err) => {
+      if (err) {
+        logger.error({ err }, "Error listening on port");
+        process.exit(1);
+      }
+      logger.info({ port }, "Server listening");
+    });
+  })
+  .catch((err) => {
+    logger.error({ err }, "Fatal error during startup");
+    process.exit(1);
   });
-});
