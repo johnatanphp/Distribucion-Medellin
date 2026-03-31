@@ -15,7 +15,7 @@ paths = [ "/" ]
 localPort = 18806
 
 [services.development]
-run = "pnpm --filter @workspace/distrimed run dev"
+run = "PORT=18806 BASE_PATH=/ pnpm --filter @workspace/distrimed run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/distrimed", "run", "build" ]
