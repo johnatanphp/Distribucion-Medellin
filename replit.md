@@ -56,7 +56,15 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
+- Routes: `src/routes/index.ts` mounts all sub-routers:
+  - `auth.ts` → `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
+  - `stores.ts` → `/api/stores`, `/api/stores/:id`, `/api/stores/:id/toggle`, `/api/stores/:id/products`
+  - `products.ts` → `/api/products`, `/api/products/:id`
+  - `users.ts` → `/api/users`
+  - `ratings.ts` → `/api/ratings`
+  - `stats.ts` → `/api/stats/global`, `/api/stats/store/:id`
+  - `health.ts` → `/api/healthz`
+- Seed data: run `pnpm --filter @workspace/api-server run seed` to populate test accounts
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
@@ -90,6 +98,10 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 ### `lib/api-client-react` (`@workspace/api-client-react`)
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
+
+### `artifacts/distrimed` (`@workspace/distrimed`)
+
+React + Vite PWA frontend. Uses App.tsx monolith with rich mock data for dashboards. Login calls the real API (`POST /api/auth/login`) and maps the authenticated user to the mock DB for rich dashboard display. Vite dev server proxies `/api` → `http://localhost:8080`.
 
 ### `scripts` (`@workspace/scripts`)
 
