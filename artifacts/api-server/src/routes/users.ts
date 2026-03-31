@@ -25,24 +25,32 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: "bad_request", message: "Missing required fields" });
     return;
   }
-  const hashed = await bcrypt.hash(password, 10);
-  const [user] = await db.insert(usersTable).values({
-    email,
-    name,
-    password: hashed,
-    role,
-    storeId: storeId || null,
-    active: true,
-  }).returning({
-    id: usersTable.id,
-    email: usersTable.email,
-    name: usersTable.name,
-    role: usersTable.role,
-    storeId: usersTable.storeId,
-    active: usersTable.active,
-    createdAt: usersTable.createdAt,
-  });
-  res.status(201).json({ ...user, createdAt: user.createdAt.toISOString() });
+  try {
+    const hashed = await bcrypt.hash(password, 10);
+    const [user] = await db.insert(usersTable).values({
+      email: email.toLowerCase().trim(),
+      name,
+      password: hashed,
+      role,
+      storeId: storeId || null,
+      active: true,
+    }).returning({
+      id: usersTable.id,
+      email: usersTable.email,
+      name: usersTable.name,
+      role: usersTable.role,
+      storeId: usersTable.storeId,
+      active: usersTable.active,
+      createdAt: usersTable.createdAt,
+    });
+    res.status(201).json({ ...user, createdAt: user.createdAt.toISOString() });
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      res.status(409).json({ error: "conflict", message: "Este correo ya está registrado" });
+      return;
+    }
+    throw err;
+  }
 });
 
 router.put("/:id", async (req, res) => {

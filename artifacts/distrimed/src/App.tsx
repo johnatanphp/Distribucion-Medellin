@@ -413,10 +413,34 @@ function LoginPage({ onLogin }) {
     } else {
       if(!name||!email||!password) return setErr("Completa todos los campos");
       if(password.length<6) return setErr("La contraseña debe tener al menos 6 caracteres");
-      if(dbRef.current.users.find(u=>u.email===email)) return setErr("Email ya registrado");
-      const nu = {id:genId(),name,email,password,role:"client",active:true,createdAt:new Date().toISOString().slice(0,10)};
-      DB.users.push(nu);
-      onLogin(nu);
+      setLoading(true);
+      try {
+        const regRes = await fetch("/api/users", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({name,email:email.toLowerCase().trim(),password,role:"customer"}),
+        });
+        if(!regRes.ok) {
+          const regData = await regRes.json();
+          return setErr(regData.message||"Error al registrarse");
+        }
+        const loginRes = await fetch("/api/auth/login", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:email.toLowerCase().trim(),password}),
+        });
+        const loginData = await loginRes.json();
+        if(!loginRes.ok) return setErr("Registro exitoso, pero no se pudo iniciar sesión");
+        localStorage.setItem("distrimed_token", loginData.token);
+        const realUser = loginData.user;
+        const nu = {id:genId(),name:realUser.name,email:realUser.email,password:"",role:"client",active:true,createdAt:realUser.createdAt||new Date().toISOString().slice(0,10)};
+        DB.users.push(nu);
+        onLogin(nu);
+      } catch(e) {
+        setErr("Error de conexión con el servidor");
+      } finally {
+        setLoading(false);
+      }
     }
   };
   const fill = (e,p) => { setEmail(e); setPassword(p); };
