@@ -101,7 +101,14 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 
 ### `artifacts/distrimed` (`@workspace/distrimed`)
 
-React + Vite PWA frontend. Uses App.tsx monolith with rich mock data for dashboards. Login calls the real API (`POST /api/auth/login`) and maps the authenticated user to the mock DB for rich dashboard display. Vite dev server proxies `/api` → `http://localhost:8080`.
+React + Vite PWA frontend. Uses App.tsx monolith with rich mock data for dashboards. Login and register both call the real API. After login, authenticated user is mapped to mock DB for rich dashboard display. Vite dev server proxies `/api` → `http://localhost:8080`.
+
+### Authentication
+
+- Passwords are hashed with **bcrypt** (both seed and new user registrations via `POST /api/users`)
+- Login (`POST /api/auth/login`) uses `bcrypt.compare` for verification
+- Server auto-seeds the database with demo accounts on first startup if DB is empty
+- Demo accounts: `admin@distri.co/admin123`, `norte@distri.co/tienda123`, `poblado@distri.co/tienda123`, `pedro@gmail.com/pass123`, `maria@gmail.com/pass123`
 
 ### `scripts` (`@workspace/scripts`)
 
