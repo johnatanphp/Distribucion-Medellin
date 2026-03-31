@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import { usersTable, storesTable, productsTable, salesTable, ratingsTable } from "@workspace/db/schema";
 import { sql } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 async function seed() {
   console.log("🌱 Seeding database...");
@@ -40,17 +41,23 @@ async function seed() {
     },
   ]).returning();
 
+  const [adminHash, tiendaHash, passHash] = await Promise.all([
+    bcrypt.hash("admin123", 10),
+    bcrypt.hash("tienda123", 10),
+    bcrypt.hash("pass123", 10),
+  ]);
+
   const [admin, carlosNorte, anaPoblado, pedro, maria] = await db.insert(usersTable).values([
     {
       email: "admin@distri.co",
-      password: "admin123",
+      password: adminHash,
       name: "Admin DISTRIMED",
       role: "superadmin",
       active: true,
     },
     {
       email: "norte@distri.co",
-      password: "tienda123",
+      password: tiendaHash,
       name: "Carlos Norte",
       role: "store",
       storeId: store1.id,
@@ -58,7 +65,7 @@ async function seed() {
     },
     {
       email: "poblado@distri.co",
-      password: "tienda123",
+      password: tiendaHash,
       name: "Ana Poblado",
       role: "store",
       storeId: store2.id,
@@ -66,14 +73,14 @@ async function seed() {
     },
     {
       email: "pedro@gmail.com",
-      password: "pass123",
+      password: passHash,
       name: "Pedro Ramírez",
       role: "customer",
       active: true,
     },
     {
       email: "maria@gmail.com",
-      password: "pass123",
+      password: passHash,
       name: "María García",
       role: "customer",
       active: true,

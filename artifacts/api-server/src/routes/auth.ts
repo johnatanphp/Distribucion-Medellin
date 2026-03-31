@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 const router: IRouter = Router();
 
@@ -14,7 +15,8 @@ router.post("/login", async (req, res) => {
   const users = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase().trim()));
   const user = users[0];
 
-  if (!user || user.password !== password) {
+  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!user || !passwordMatch) {
     return res.status(401).json({ error: "invalid_credentials", message: "Invalid email or password" });
   }
 
