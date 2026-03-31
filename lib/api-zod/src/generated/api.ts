@@ -329,6 +329,54 @@ export const GetUsersResponseItem = zod.object({
 export const GetUsersResponse = zod.array(GetUsersResponseItem);
 
 /**
+ * @summary Create user (superadmin)
+ */
+export const CreateUserBody = zod.object({
+  email: zod.string(),
+  name: zod.string(),
+  password: zod.string(),
+  role: zod.enum(["superadmin", "store", "customer"]),
+  storeId: zod.number().nullish(),
+});
+
+/**
+ * @summary Update user
+ */
+export const UpdateUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateUserBody = zod.object({
+  name: zod.string().optional(),
+  email: zod.string().optional(),
+  role: zod.enum(["superadmin", "store", "customer"]).optional(),
+  active: zod.boolean().optional(),
+  storeId: zod.number().nullish(),
+});
+
+export const UpdateUserResponse = zod.object({
+  id: zod.number(),
+  email: zod.string(),
+  name: zod.string(),
+  role: zod.enum(["superadmin", "store", "customer"]),
+  storeId: zod.number().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete user
+ */
+export const DeleteUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteUserResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary Get global dashboard stats
  */
 export const GetGlobalStatsResponse = zod.object({

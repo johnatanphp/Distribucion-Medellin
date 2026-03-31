@@ -177,6 +177,40 @@ export interface StoreStats {
   recentSales: SaleItem[];
 }
 
+export type CreateUserRequestRole =
+  (typeof CreateUserRequestRole)[keyof typeof CreateUserRequestRole];
+
+export const CreateUserRequestRole = {
+  superadmin: "superadmin",
+  store: "store",
+  customer: "customer",
+} as const;
+
+export interface CreateUserRequest {
+  email: string;
+  name: string;
+  password: string;
+  role: CreateUserRequestRole;
+  storeId?: number | null;
+}
+
+export type UpdateUserRequestRole =
+  (typeof UpdateUserRequestRole)[keyof typeof UpdateUserRequestRole];
+
+export const UpdateUserRequestRole = {
+  superadmin: "superadmin",
+  store: "store",
+  customer: "customer",
+} as const;
+
+export interface UpdateUserRequest {
+  name?: string;
+  email?: string;
+  role?: UpdateUserRequestRole;
+  active?: boolean;
+  storeId?: number | null;
+}
+
 export type GetStoresParams = {
   active?: boolean;
 };
