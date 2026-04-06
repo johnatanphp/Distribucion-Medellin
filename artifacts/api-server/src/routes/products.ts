@@ -1,18 +1,20 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { productsTable, ratingsTable } from "@workspace/db/schema";
-import { eq, avg } from "drizzle-orm";
+import { productsTable, ratingsTable, storesTable } from "@workspace/db/schema";
+import { eq, avg, count, lte, gte, and } from "drizzle-orm";
 
 const router: IRouter = Router();
 
 router.get("/", async (req, res) => {
-  const { storeId } = req.query;
-  let rows;
-  if (storeId) {
-    rows = await db.select().from(productsTable).where(eq(productsTable.storeId, Number(storeId)));
-  } else {
-    rows = await db.select().from(productsTable);
-  }
+  const { storeId, minPrice, maxPrice, category } = req.query;
+
+  let rows = await db.select().from(productsTable).where(eq(productsTable.active, true));
+
+  if (storeId) rows = rows.filter((p) => p.storeId === Number(storeId));
+  if (minPrice) rows = rows.filter((p) => Number(p.price) >= Number(minPrice));
+  if (maxPrice) rows = rows.filter((p) => Number(p.price) <= Number(maxPrice));
+  if (category) rows = rows.filter((p) => p.category === String(category));
+
   const enriched = await Promise.all(rows.map(enrichProduct));
   res.json(enriched);
 });
@@ -22,9 +24,10 @@ router.post("/", async (req, res) => {
   if (!name || !description || price == null || !category || storeId == null) {
     return res.status(400).json({ error: "bad_request", message: "Missing required fields" });
   }
-  const [product] = await db.insert(productsTable).values({
-    name, description, price: String(price), category, imageUrl, stock: stock ?? 0, storeId,
-  }).returning();
+  const [product] = await db
+    .insert(productsTable)
+    .values({ name, description, price: String(price), category, imageUrl, stock: stock ?? 0, storeId })
+    .returning();
   res.status(201).json(await enrichProduct(product));
 });
 
@@ -59,11 +62,19 @@ router.delete("/:id", async (req, res) => {
 });
 
 async function enrichProduct(p: typeof productsTable.$inferSelect) {
-  const [ratingRow] = await db.select({ avg: avg(ratingsTable.stars) }).from(ratingsTable).where(eq(ratingsTable.productId, p.id));
+  const [ratingRow] = await db
+    .select({ avg: avg(ratingsTable.stars), total: count(ratingsTable.id) })
+    .from(ratingsTable)
+    .where(eq(ratingsTable.productId, p.id));
+
+  const [store] = await db.select({ name: storesTable.name }).from(storesTable).where(eq(storesTable.id, p.storeId));
+
   return {
     ...p,
     price: Number(p.price),
-    avgRating: ratingRow?.avg ? Number(ratingRow.avg) : null,
+    storeName: store?.name ?? "",
+    avgRating: ratingRow?.avg ? Number(ratingRow.avg) : 0,
+    totalRatings: ratingRow?.total ?? 0,
     createdAt: p.createdAt.toISOString(),
   };
 }

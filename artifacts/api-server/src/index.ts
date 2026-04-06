@@ -73,6 +73,24 @@ async function ensureSchema() {
       comment text,
       created_at timestamp NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS orders (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL,
+      status text NOT NULL DEFAULT 'completed',
+      total numeric(12,2) NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS order_items (
+      id serial PRIMARY KEY,
+      order_id integer NOT NULL,
+      product_id integer NOT NULL,
+      store_id integer NOT NULL,
+      product_name text NOT NULL,
+      store_name text NOT NULL,
+      quantity integer NOT NULL,
+      unit_price numeric(10,2) NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
   `);
   logger.info("Schema ensured (tables created if missing)");
 }

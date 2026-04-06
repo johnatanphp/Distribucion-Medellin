@@ -63,6 +63,7 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
   - `users.ts` → `/api/users`
   - `ratings.ts` → `/api/ratings`
   - `stats.ts` → `/api/stats/global`, `/api/stats/store/:id`
+  - `orders.ts` → `/api/orders` (GET user orders, POST create order + items + sales)
   - `health.ts` → `/api/healthz`
 - Seed data: run `pnpm --filter @workspace/api-server run seed` to populate test accounts
 - Depends on: `@workspace/db`, `@workspace/api-zod`
@@ -101,7 +102,16 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 
 ### `artifacts/distrimed` (`@workspace/distrimed`)
 
-React + Vite PWA frontend. Uses App.tsx monolith with rich mock data for dashboards. Login and register both call the real API. After login, authenticated user is mapped to mock DB for rich dashboard display. Vite dev server proxies `/api` → `http://localhost:8080`.
+React + Vite PWA frontend. Uses wouter-based routing (modular pages). Vite dev server proxies `/api` → `http://localhost:8080`. CartProvider wraps the app for global cart state.
+
+**Pages (by role):**
+- **Superadmin**: `AdminDashboard` (overview/stores/users tabs, create store/user dialogs, toggle store)
+- **Store owner**: `StoreDashboard` (inventory management, store stats, product CRUD)
+- **Customer**: `CustomerDashboard` (catalog with search/category/price filters + map view), `CustomerOrders` (order history with expandable details), `CustomerWishlist` (localStorage-based saved products), `CustomerCart` (cart management + order placement), `ProfilePage` (edit name)
+
+**Shared layout**: `DashboardLayout` — responsive sidebar, mobile hamburger, cart badge, role-based nav
+
+**Orders**: Full REST flow — `POST /api/orders` creates order + items + sales records; `GET /api/orders` returns user's history with items
 
 ### Authentication
 
