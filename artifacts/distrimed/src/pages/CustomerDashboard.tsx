@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import DashboardLayout from "./layouts/DashboardLayout";
 import {
   useGetProducts,
@@ -6,7 +6,7 @@ import {
   useCreateRating,
   getGetProductsQueryKey
 } from "@workspace/api-client-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,13 +14,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, MapPin, Star, Package, ShoppingCart, Heart, Map, LayoutGrid } from "lucide-react";
-import MapComponent from "@/components/MapComponent";
+import {
+  Search, MapPin, Star, Package, ShoppingCart, Heart, Map, LayoutGrid,
+  Navigation, Phone, ExternalLink, Store, Layers, Filter, ChevronLeft,
+  ChevronRight as ChevronRightIcon
+} from "lucide-react";
+import MapComponent, { StoreMarker } from "@/components/MapComponent";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { addToWishlist, removeFromWishlist, isInWishlist } from "./CustomerWishlist";
 import { cn } from "@/lib/utils";
+
+const MEDELLÍN: [number, number] = [6.2442, -75.5812];
 
 export default function CustomerDashboard() {
   const queryClient = useQueryClient();
@@ -32,10 +38,13 @@ export default function CustomerDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [view, setView] = useState<"catalog" | "map">("catalog");
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(MEDELLÍN);
+  const [selectedStore, setSelectedStore] = useState<StoreMarker | null>(null);
+  const [storeSearch, setStoreSearch] = useState("");
+  const storeListRef = useRef<HTMLDivElement>(null);
 
-  const { data: stores } = useGetStores({ active: true });
+  const { data: stores, isLoading: storesLoading } = useGetStores({ active: true });
   const { data: products, isLoading: productsLoading } = useGetProducts({ maxPrice });
-
   const createRating = useCreateRating({
     mutation: {
       onSuccess: () => {
@@ -49,12 +58,35 @@ export default function CustomerDashboard() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setUserLocation([pos.coords.latitude, pos.coords.longitude]);
-          toast({ title: "Ubicación fijada", description: "Mostrando tiendas cercanas." });
+          const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+          setUserLocation(loc);
+          setMapCenter(loc);
+          toast({ title: "Ubicación detectada", description: "Mostrando tiendas cercanas a tu posición." });
         },
-        () => toast({ title: "Error", description: "No se pudo obtener la ubicación.", variant: "destructive" })
+        () => toast({ title: "Error de ubicación", description: "Activa el GPS para ver tiendas cercanas.", variant: "destructive" })
       );
     }
+  };
+
+  const storeMarkers: StoreMarker[] = (stores ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    lat: s.lat,
+    lng: s.lng,
+    description: s.description,
+    address: s.address,
+    phone: s.phone,
+    active: s.active,
+  }));
+
+  const filteredStoreMarkers = storeMarkers.filter((s) =>
+    s.name.toLowerCase().includes(storeSearch.toLowerCase()) ||
+    (s.address || "").toLowerCase().includes(storeSearch.toLowerCase())
+  );
+
+  const handleStoreClick = (store: StoreMarker) => {
+    setSelectedStore(store);
+    setMapCenter([store.lat, store.lng]);
   };
 
   const categories = ["all", ...Array.from(new Set(products?.map((p) => p.category) ?? []))];
@@ -69,116 +101,302 @@ export default function CustomerDashboard() {
   });
 
   return (
-    <DashboardLayout title="Catálogo">
-      <div className="space-y-6">
+    <DashboardLayout title={view === "map" ? "Mapa de Tiendas" : "Catálogo"}>
+      <div className="space-y-5">
         {/* Tab switcher */}
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
+          <button
             onClick={() => setView("catalog")}
             className={cn(
-              "font-mono text-xs uppercase border",
+              "flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs uppercase tracking-wider border transition-all",
               view === "catalog"
-                ? "text-primary border-primary/40 bg-primary/10"
-                : "text-muted-foreground border-primary/10 hover:text-primary"
+                ? "text-black font-bold border-transparent"
+                : "text-muted-foreground border-white/10 hover:text-white hover:border-white/20"
             )}
+            style={view === "catalog" ? { background: "#00FFCC" } : {}}
           >
-            <LayoutGrid className="w-3 h-3 mr-2" /> Catálogo
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
+            <LayoutGrid className="w-4 h-4" /> Catálogo
+          </button>
+          <button
             onClick={() => setView("map")}
             className={cn(
-              "font-mono text-xs uppercase border",
+              "flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs uppercase tracking-wider border transition-all",
               view === "map"
-                ? "text-primary border-primary/40 bg-primary/10"
-                : "text-muted-foreground border-primary/10 hover:text-primary"
+                ? "text-black font-bold border-transparent"
+                : "text-muted-foreground border-white/10 hover:text-white hover:border-white/20"
             )}
+            style={view === "map" ? { background: "#00FFCC" } : {}}
           >
-            <Map className="w-3 h-3 mr-2" /> Mapa
-          </Button>
+            <Map className="w-4 h-4" /> Mapa
+          </button>
+
+          {view === "catalog" && (
+            <span className="ml-auto text-[10px] font-mono text-muted-foreground">
+              {filteredProducts?.length ?? 0} productos
+            </span>
+          )}
+          {view === "map" && (
+            <span className="ml-auto text-[10px] font-mono text-muted-foreground">
+              {stores?.length ?? 0} tiendas activas
+            </span>
+          )}
         </div>
 
-        {/* Map View */}
+        {/* ── MAP VIEW ── */}
         {view === "map" && (
-          <Card className="bg-card/50 backdrop-blur-md border-primary/20 overflow-hidden">
-            <div className="h-[500px] w-full relative">
-              <MapComponent
-                center={userLocation || [6.2442, -75.5812]}
-                zoom={13}
-                userLocation={userLocation}
-                stores={stores?.map((s) => ({ id: s.id, name: s.name, lat: s.lat, lng: s.lng, description: s.address }))}
-              />
-              <div className="absolute top-4 right-4 z-[400]">
-                <Button
-                  onClick={handleGetLocation}
-                  className="bg-primary/20 backdrop-blur text-primary border border-primary hover:bg-primary hover:text-black font-mono text-xs uppercase shadow-lg"
-                >
-                  <MapPin className="w-4 h-4 mr-2" /> Localizar
-                </Button>
+          <div className="space-y-5">
+            {/* Main map widget */}
+            <div className="rounded-2xl overflow-hidden border border-white/10" style={{ background: "rgba(10,14,26,0.8)" }}>
+              {/* Map toolbar */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5">
+                <div className="flex items-center gap-2 flex-1">
+                  <Store className="w-4 h-4 text-primary" />
+                  <span className="font-mono text-xs text-primary uppercase tracking-widest">Red de Distribución · Medellín</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={storeSearch}
+                      onChange={(e) => setStoreSearch(e.target.value)}
+                      placeholder="Buscar tienda..."
+                      className="pl-8 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white font-mono text-xs w-44 placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleGetLocation}
+                    className="bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-black font-mono text-[10px] uppercase h-8 px-3 rounded-lg"
+                  >
+                    <Navigation className="w-3.5 h-3.5 mr-1.5" /> Localizar
+                  </Button>
+                </div>
               </div>
-              <div className="absolute bottom-4 left-4 z-[400] bg-black/80 backdrop-blur p-3 rounded border border-primary/30">
-                <h4 className="font-mono text-xs text-primary uppercase mb-1 flex items-center">
-                  <Package className="w-3 h-3 mr-1" /> Red Distrimed
-                </h4>
-                <p className="font-mono text-[10px] text-muted-foreground">{stores?.length || 0} Nodos en línea</p>
+
+              {/* Map + sidebar layout */}
+              <div className="flex h-[480px]">
+                {/* Store list sidebar */}
+                <div className="w-56 border-r border-white/5 flex flex-col bg-black/30 overflow-hidden hidden sm:flex">
+                  <div className="p-3 border-b border-white/5">
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      {filteredStoreMarkers.length} tienda{filteredStoreMarkers.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    {storesLoading ? (
+                      <div className="p-3 space-y-2">
+                        {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-lg bg-white/5" />)}
+                      </div>
+                    ) : (
+                      <div className="p-2 space-y-1">
+                        {filteredStoreMarkers.map((store) => (
+                          <button
+                            key={store.id}
+                            onClick={() => handleStoreClick(store)}
+                            className={cn(
+                              "w-full text-left p-2.5 rounded-lg transition-all border",
+                              selectedStore?.id === store.id
+                                ? "border-primary/40 bg-primary/10"
+                                : "border-transparent hover:bg-white/5 hover:border-white/10"
+                            )}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div
+                                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                                style={{ background: "rgba(0,255,204,0.1)", border: "1px solid rgba(0,255,204,0.2)" }}
+                              >
+                                <Store className="w-3.5 h-3.5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-mono text-xs font-bold text-white truncate">{store.name}</p>
+                                <p className="font-mono text-[9px] text-muted-foreground truncate mt-0.5">{store.address || store.description}</p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                        {filteredStoreMarkers.length === 0 && (
+                          <div className="p-4 text-center">
+                            <p className="font-mono text-[10px] text-muted-foreground">Sin resultados</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Map */}
+                <div className="flex-1 relative">
+                  <MapComponent
+                    center={mapCenter}
+                    zoom={selectedStore ? 16 : 13}
+                    userLocation={userLocation}
+                    stores={filteredStoreMarkers}
+                    selectedStoreId={selectedStore?.id}
+                    onStoreClick={handleStoreClick}
+                  />
+                  {/* Legend overlay */}
+                  <div className="absolute bottom-3 right-3 z-[400] rounded-lg px-3 py-2 text-[9px] font-mono space-y-1" style={{ background: "rgba(5,8,16,0.9)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: "#00FFCC", boxShadow: "0 0 6px #00FFCC" }} />
+                      <span className="text-muted-foreground">Tienda activa</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: "#8b5cf6", boxShadow: "0 0 6px #8b5cf6" }} />
+                      <span className="text-muted-foreground">Tu ubicación</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </Card>
+
+            {/* Selected store detail */}
+            {selectedStore && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(0,255,204,0.1)", border: "1px solid rgba(0,255,204,0.3)" }}>
+                      <Store className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-mono font-bold text-white text-base">{selectedStore.name}</h3>
+                        <Badge className="text-[10px] font-mono uppercase border-primary/30 bg-primary/10 text-primary">Activa</Badge>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs font-mono text-muted-foreground">
+                        {selectedStore.address && (
+                          <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3 text-primary flex-shrink-0" /> {selectedStore.address}</span>
+                        )}
+                        {selectedStore.phone && (
+                          <span className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-primary flex-shrink-0" /> {selectedStore.phone}</span>
+                        )}
+                        {selectedStore.description && (
+                          <span className="col-span-full text-muted-foreground/70 mt-1">{selectedStore.description}</span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedStore(null)}
+                      className="text-muted-foreground hover:text-white text-xs font-mono flex-shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Store cards grid below map */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Layers className="w-4 h-4 text-primary" />
+                <h2 className="font-mono text-sm font-bold text-white uppercase tracking-wider">Nodos de Distribución</h2>
+                <span className="ml-auto text-[10px] font-mono text-muted-foreground">{stores?.length ?? 0} activos</span>
+              </div>
+              {storesLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-36 rounded-xl bg-white/5" />)}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stores?.map((store) => (
+                    <button
+                      key={store.id}
+                      onClick={() => {
+                        handleStoreClick({ id: store.id, name: store.name, lat: store.lat, lng: store.lng, description: store.description, address: store.address, phone: store.phone, active: store.active });
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-left rounded-2xl p-5 border transition-all hover:scale-[1.01] group"
+                      style={selectedStore?.id === store.id ? {
+                        background: "rgba(0,255,204,0.08)",
+                        border: "1px solid rgba(0,255,204,0.3)",
+                        boxShadow: "0 0 24px rgba(0,255,204,0.1)"
+                      } : {
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-105"
+                          style={{ background: "rgba(0,255,204,0.1)", border: "1px solid rgba(0,255,204,0.2)" }}
+                        >
+                          <Store className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-mono font-bold text-white text-sm truncate">{store.name}</h3>
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" style={{ boxShadow: "0 0 6px #00FFCC" }} />
+                          </div>
+                          {store.address && (
+                            <p className="font-mono text-[10px] text-muted-foreground flex items-center gap-1 mb-1 truncate">
+                              <MapPin className="w-2.5 h-2.5 flex-shrink-0" /> {store.address}
+                            </p>
+                          )}
+                          {store.phone && (
+                            <p className="font-mono text-[10px] text-muted-foreground flex items-center gap-1 truncate">
+                              <Phone className="w-2.5 h-2.5 flex-shrink-0" /> {store.phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="font-mono text-[10px] text-muted-foreground/60 mt-3 line-clamp-2">{store.description}</p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <span className="text-[9px] font-mono text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <Navigation className="w-2.5 h-2.5" /> Ver en mapa
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
-        {/* Catalog View */}
+        {/* ── CATALOG VIEW ── */}
         {view === "catalog" && (
           <>
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-primary/70" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-primary/60" />
                 <Input
                   placeholder="Buscar producto, categoría o tienda..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-black/50 border-primary/30 focus:border-primary text-white font-mono h-11"
+                  className="pl-10 bg-white/5 border-white/10 focus:border-primary/40 text-white font-mono h-11 rounded-xl"
                 />
               </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full sm:w-44 bg-black/50 border-primary/30 text-white font-mono h-11 text-xs uppercase">
+                <SelectTrigger className="w-full sm:w-44 bg-white/5 border-white/10 text-white font-mono h-11 text-xs uppercase rounded-xl">
                   <SelectValue placeholder="Categoría" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0a0e1a] border-primary/30">
+                <SelectContent className="bg-[#0a0e1a] border-white/10">
                   {categories.map((cat) => (
                     <SelectItem key={cat} value={cat} className="font-mono text-xs uppercase text-white focus:bg-primary/20 focus:text-primary">
-                      {cat === "all" ? "Todas" : cat}
+                      {cat === "all" ? "Todas las categorías" : cat}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <div className="relative w-full sm:w-36">
-                <span className="absolute left-3 top-3 text-primary/70 font-mono text-xs">Max $</span>
+                <span className="absolute left-3 top-3 text-primary/60 font-mono text-xs">Max $</span>
                 <Input
                   type="number"
                   placeholder="Precio..."
                   value={maxPrice || ""}
                   onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : undefined)}
-                  className="pl-14 bg-black/50 border-primary/30 focus:border-primary text-white font-mono h-11"
+                  className="pl-14 bg-white/5 border-white/10 focus:border-primary/40 text-white font-mono h-11 rounded-xl"
                 />
               </div>
             </div>
 
-            {/* Results count */}
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-mono text-muted-foreground uppercase">
-                {filteredProducts?.length ?? 0} producto{filteredProducts?.length !== 1 ? "s" : ""} encontrado{filteredProducts?.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-
-            {/* Product Grid */}
+            {/* Products grid */}
             {productsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {[1, 2, 3, 4, 5, 6, 8].map((i) => (
-                  <Skeleton key={i} className="h-[280px] w-full bg-primary/10 rounded-md" />
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <Skeleton key={i} className="h-[300px] w-full rounded-2xl bg-white/5" />
                 ))}
               </div>
             ) : (
@@ -206,11 +424,17 @@ export default function CustomerDashboard() {
                   />
                 ))}
                 {(!filteredProducts || filteredProducts.length === 0) && (
-                  <div className="col-span-full py-16 text-center border border-dashed border-primary/20 rounded-md">
-                    <Package className="w-12 h-12 text-muted-foreground opacity-20 mx-auto mb-3" />
-                    <p className="font-mono text-muted-foreground uppercase text-sm">
-                      No se encontraron productos
-                    </p>
+                  <div className="col-span-full py-20 text-center rounded-2xl border border-dashed border-white/10">
+                    <Package className="w-16 h-16 text-muted-foreground opacity-20 mx-auto mb-4" />
+                    <p className="font-mono text-muted-foreground text-sm">Sin resultados para tu búsqueda</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setSearchTerm(""); setSelectedCategory("all"); setMaxPrice(undefined); }}
+                      className="mt-3 text-primary font-mono text-xs"
+                    >
+                      Limpiar filtros
+                    </Button>
                   </div>
                 )}
               </div>
@@ -223,15 +447,9 @@ export default function CustomerDashboard() {
 }
 
 function ProductCard({
-  product,
-  onRate,
-  isRating,
-  onAddToCart,
+  product, onRate, isRating, onAddToCart,
 }: {
-  product: any;
-  onRate: (stars: number, comment?: string) => void;
-  isRating: boolean;
-  onAddToCart: () => void;
+  product: any; onRate: (stars: number, comment?: string) => void; isRating: boolean; onAddToCart: () => void;
 }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -264,108 +482,105 @@ function ProductCard({
     }
   };
 
+  const stockColor = product.stock > 10 ? "#22c55e" : product.stock > 0 ? "#eab308" : "#ef4444";
+
   return (
-    <Card className="bg-card/50 backdrop-blur-md border-primary/20 hover:border-primary/50 transition-all duration-300 group flex flex-col overflow-hidden">
-      <div className="h-36 bg-black/40 relative border-b border-primary/10 flex items-center justify-center overflow-hidden">
+    <div
+      className="rounded-2xl overflow-hidden flex flex-col group transition-all hover:scale-[1.01]"
+      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+    >
+      {/* Image */}
+      <div className="h-40 relative overflow-hidden" style={{ background: "rgba(0,0,0,0.4)" }}>
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="object-cover w-full h-full opacity-70 group-hover:opacity-100 transition-opacity"
+            className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
           />
         ) : (
-          <Package className="w-12 h-12 text-primary/20 group-hover:text-primary/40 transition-colors" />
+          <div className="w-full h-full flex items-center justify-center">
+            <Package className="w-14 h-14 text-white/10" />
+          </div>
         )}
+        {/* Gradient overlay */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,14,26,0.8) 0%, transparent 60%)" }} />
+        {/* Category chip */}
         <div className="absolute top-2 left-2">
-          <Badge
-            variant="outline"
-            className="bg-black/60 border-primary/50 text-primary font-mono text-[10px] backdrop-blur uppercase"
-          >
+          <span className="px-2 py-0.5 rounded-md font-mono text-[9px] uppercase font-bold" style={{ background: "rgba(0,255,204,0.2)", color: "#00FFCC", border: "1px solid rgba(0,255,204,0.3)" }}>
             {product.category}
-          </Badge>
+          </span>
         </div>
+        {/* Wishlist btn */}
         <button
           onClick={handleWishlist}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:scale-110 transition-transform"
+          className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+          style={{ background: wishlisted ? "rgba(236,72,153,0.2)" : "rgba(0,0,0,0.5)", border: wishlisted ? "1px solid rgba(236,72,153,0.4)" : "1px solid rgba(255,255,255,0.1)" }}
         >
           <Heart
-            className={cn(
-              "w-3.5 h-3.5 transition-colors",
-              wishlisted ? "text-red-400 fill-red-400" : "text-muted-foreground"
-            )}
+            className="w-3.5 h-3.5"
+            style={{ color: wishlisted ? "#ec4899" : "rgba(255,255,255,0.5)", fill: wishlisted ? "#ec4899" : "none" }}
           />
         </button>
-      </div>
-
-      <CardContent className="p-4 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-1">
-          <h4 className="font-mono text-sm font-bold text-white uppercase leading-tight flex-1 pr-2 truncate">
-            {product.name}
-          </h4>
-          <span className="font-mono text-primary font-bold text-sm flex-shrink-0">
+        {/* Price at bottom of image */}
+        <div className="absolute bottom-2 right-2">
+          <span className="font-mono font-black text-sm" style={{ color: "#00FFCC", textShadow: "0 0 8px rgba(0,255,204,0.5)" }}>
             ${product.price?.toLocaleString("es-CO")}
           </span>
         </div>
+      </div>
 
-        <p className="text-[10px] text-muted-foreground font-mono uppercase mb-1">{product.storeName}</p>
-        <p className="text-xs text-muted-foreground font-mono mb-3 line-clamp-2 flex-1">{product.description}</p>
+      {/* Content */}
+      <div className="p-4 flex-1 flex flex-col">
+        <h4 className="font-mono text-sm font-bold text-white leading-snug mb-0.5 line-clamp-2">{product.name}</h4>
+        <p className="font-mono text-[10px] text-muted-foreground mb-1">{product.storeName}</p>
+        <p className="text-xs text-muted-foreground/70 font-mono line-clamp-2 flex-1 mb-3">{product.description}</p>
 
-        <div className="flex items-center justify-between mb-3 pt-2 border-t border-primary/10">
+        {/* Rating + stock */}
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-            <span className="text-xs font-mono text-yellow-500">
-              {product.avgRating != null ? Number(product.avgRating).toFixed(1) : "—"}
-            </span>
-            <span className="text-[10px] font-mono text-muted-foreground">({product.totalRatings ?? 0})</span>
+            {[1,2,3,4,5].map(s => (
+              <Star key={s} className="w-3 h-3" style={{ color: s <= Math.round(product.avgRating || 0) ? "#eab308" : "rgba(255,255,255,0.15)", fill: s <= Math.round(product.avgRating || 0) ? "#eab308" : "none" }} />
+            ))}
+            <span className="font-mono text-[10px] text-muted-foreground ml-1">({product.totalRatings ?? 0})</span>
           </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              "text-[10px] font-mono",
-              product.stock > 10
-                ? "border-green-500/30 text-green-400"
-                : product.stock > 0
-                ? "border-yellow-500/30 text-yellow-400"
-                : "border-red-500/30 text-red-400"
-            )}
-          >
-            {product.stock > 0 ? `${product.stock} und` : "Sin stock"}
-          </Badge>
+          <span className="font-mono text-[9px] font-bold uppercase" style={{ color: stockColor }}>
+            {product.stock > 0 ? `${product.stock} und` : "Agotado"}
+          </span>
         </div>
 
+        {/* Actions */}
         <div className="flex gap-2">
           <Button
             size="sm"
             onClick={onAddToCart}
             disabled={product.stock === 0}
-            className="flex-1 bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-black font-mono text-xs uppercase"
+            className="flex-1 font-mono text-xs uppercase rounded-xl h-9 transition-all"
+            style={{ background: "rgba(0,255,204,0.1)", color: "#00FFCC", border: "1px solid rgba(0,255,204,0.3)" }}
           >
-            <ShoppingCart className="w-3 h-3 mr-1" /> Carrito
+            <ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Agregar
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-muted-foreground hover:text-primary border border-primary/20 hover:border-primary/40 font-mono text-xs uppercase px-2"
+                className="font-mono text-xs h-9 w-9 p-0 rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5"
               >
-                <Star className="w-3 h-3" />
+                <Star className="w-3.5 h-3.5 text-yellow-500" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px] bg-[#0a0e1a] border-primary/50 text-white">
+            <DialogContent className="sm:max-w-[380px] bg-[#0a0e1a] border-white/10 text-white rounded-2xl">
               <DialogHeader>
-                <DialogTitle className="font-mono text-primary uppercase text-sm">Valorar Producto</DialogTitle>
+                <DialogTitle className="font-mono text-primary text-sm uppercase">Valorar Producto</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-                <p className="font-mono text-xs text-muted-foreground">{product.name}</p>
-                <div className="flex items-center gap-2 justify-center">
+                <p className="font-mono text-xs text-muted-foreground truncate">{product.name}</p>
+                <div className="flex items-center gap-2 justify-center py-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button type="button" key={star} onClick={() => setRating(star)}>
                       <Star
-                        className={cn(
-                          "w-8 h-8 hover:scale-110 transition-transform",
-                          star <= rating ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground"
-                        )}
+                        className="w-9 h-9 hover:scale-110 transition-transform"
+                        style={{ color: star <= rating ? "#eab308" : "rgba(255,255,255,0.2)", fill: star <= rating ? "#eab308" : "none" }}
                       />
                     </button>
                   ))}
@@ -373,14 +588,15 @@ function ProductCard({
                 <Textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="bg-black/50 border-primary/30 font-mono text-white resize-none"
+                  className="bg-white/5 border-white/10 font-mono text-white resize-none rounded-xl"
                   placeholder="Comentario opcional..."
                   rows={3}
                 />
                 <Button
                   type="submit"
                   disabled={isRating}
-                  className="w-full bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-black font-mono text-xs uppercase"
+                  className="w-full font-mono text-xs uppercase rounded-xl"
+                  style={{ background: "rgba(0,255,204,0.1)", color: "#00FFCC", border: "1px solid rgba(0,255,204,0.3)" }}
                 >
                   Enviar Valoración
                 </Button>
@@ -388,7 +604,7 @@ function ProductCard({
             </DialogContent>
           </Dialog>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

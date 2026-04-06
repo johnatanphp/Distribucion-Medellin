@@ -1,19 +1,58 @@
 {
   "name": "DISTRIMED - Red de Distribución",
   "short_name": "DISTRIMED",
-  "description": "Sistema de gestión de red de distribución de moda para Medellín",
+  "description": "Sistema de gestión de red de distribución para Medellín. Conecta tiendas, productos y clientes.",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#f5f2ec",
-  "theme_color": "#0099b8",
-  "categories": ["business", "shopping"],
+  "background_color": "#050810",
+  "theme_color": "#00FFCC",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["business", "shopping", "productivity"],
+  "scope": "/",
+  "id": "/",
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Catálogo",
+      "short_name": "Catálogo",
+      "description": "Explorar productos del catálogo",
+      "url": "/customer",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Mis Pedidos",
+      "short_name": "Pedidos",
+      "description": "Ver historial de pedidos",
+      "url": "/customer/orders",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Mapa",
+      "short_name": "Mapa",
+      "description": "Ver mapa de tiendas",
+      "url": "/customer?tab=map",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 480
+  }
 }

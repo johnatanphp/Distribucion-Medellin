@@ -6,6 +6,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import { getAuthToken } from "@/lib/auth";
 
+import PWAInstallBanner from "@/components/PWAInstallBanner";
 import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/AdminDashboard";
 import StoreDashboard from "@/pages/StoreDashboard";
@@ -72,6 +73,7 @@ export default function App() {
         <CartProvider>
           <AppRouter />
           <Toaster />
+          <PWAInstallBanner />
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
