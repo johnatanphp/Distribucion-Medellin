@@ -69,18 +69,89 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Enforce dark mode variables by default for the cyberpunk theme */
-  --button-outline: rgba(0, 255, 204, 0.2);
-  --badge-outline: rgba(0, 255, 204, 0.1);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(0, 255, 204, 0.04);
-  --elevate-2: rgba(0, 255, 204, 0.09);
+  --elevate-1: rgba(0, 153, 184, 0.04);
+  --elevate-2: rgba(0, 153, 184, 0.09);
 
-  /* Deep dark navy/black background */
+  /* LIGHT MODE — fondos crema/aqua */
+  --background: 36 30% 95%;
+  --foreground: 220 30% 14%;
+
+  --border: 35 18% 82%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 14%;
+  --card-border: 192 100% 36% / 0.15;
+
+  --sidebar: 36 25% 92%;
+  --sidebar-foreground: 220 30% 14%;
+  --sidebar-border: 192 100% 36% / 0.15;
+  --sidebar-primary: 192 100% 36%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 36 20% 86%;
+  --sidebar-accent-foreground: 220 30% 14%;
+  --sidebar-ring: 192 100% 36%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 30% 14%;
+  --popover-border: 192 100% 36% / 0.15;
+
+  /* Primary Accent: Cyan/Aqua */
+  --primary: 192 100% 36%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 260 60% 55%;
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 36 18% 88%;
+  --muted-foreground: 220 15% 50%;
+
+  --accent: 192 100% 36% / 0.1;
+  --accent-foreground: 192 100% 30%;
+
+  --destructive: 349 75% 44%;
+  --destructive-foreground: 0 0% 100%;
+
+  --input: 192 100% 36% / 0.15;
+  --ring: 192 100% 36%;
+
+  --chart-1: 192 100% 36%;
+  --chart-2: 260 60% 55%;
+  --chart-3: 190 100% 45%;
+  --chart-4: 320 80% 55%;
+  --chart-5: 38 90% 45%;
+
+  --app-font-sans: 'Inter', sans-serif;
+  --app-font-serif: Georgia, serif;
+  --app-font-mono: 'Share Tech Mono', monospace;
+  --radius: 0.5rem;
+
+  --shadow-2xs: 0px 1px 4px 0px rgba(0, 0, 0, 0.06);
+  --shadow-xs: 0px 1px 8px 0px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0px 2px 12px 0px rgba(0, 0, 0, 0.1);
+  --shadow: 0px 2px 16px 0px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0px 4px 20px 0px rgba(0, 0, 0, 0.14);
+  --shadow-lg: 0px 6px 24px 0px rgba(0, 0, 0, 0.16);
+  --shadow-xl: 0px 8px 32px 0px rgba(0, 0, 0, 0.18);
+  --shadow-2xl: 0px 12px 40px 0px rgba(0, 0, 0, 0.22);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+.dark {
+  --elevate-1: rgba(0, 229, 255, 0.04);
+  --elevate-2: rgba(0, 229, 255, 0.09);
+
   --background: 226 45% 7%;
   --foreground: 180 5% 90%;
 
-  /* Borders and cards */
   --border: 226 30% 15%;
   --card: 226 45% 9%;
   --card-foreground: 180 5% 90%;
@@ -99,11 +170,9 @@
   --popover-foreground: 180 5% 90%;
   --popover-border: 168 100% 40% / 0.2;
 
-  /* Primary Accent: Neon Cyan (#00FFCC) */
   --primary: 168 100% 40%;
   --primary-foreground: 226 45% 7%;
 
-  /* Secondary: Electric Blue / Purple */
   --secondary: 260 100% 65%;
   --secondary-foreground: 0 0% 100%;
 
@@ -125,11 +194,6 @@
   --chart-4: 320 100% 60%;
   --chart-5: 45 100% 50%;
 
-  --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: Georgia, serif;
-  --app-font-mono: 'Share Tech Mono', monospace;
-  --radius: 0.25rem;
-
   --shadow-2xs: 0px 0px 4px 0px rgba(0, 255, 204, 0.1);
   --shadow-xs: 0px 0px 8px 0px rgba(0, 255, 204, 0.15);
   --shadow-sm: 0px 0px 12px 0px rgba(0, 255, 204, 0.2);
@@ -138,20 +202,6 @@
   --shadow-lg: 0px 0px 24px 0px rgba(0, 255, 204, 0.35);
   --shadow-xl: 0px 0px 32px 0px rgba(0, 255, 204, 0.4);
   --shadow-2xl: 0px 0px 40px 0px rgba(0, 255, 204, 0.5);
-  --tracking-normal: 0em;
-  --spacing: 0.25rem;
-
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-}
-
-.dark {
-  /* Copy same variables since we want to force dark mode anyway */
 }
 
 @layer base {
@@ -176,24 +226,32 @@
     pointer-events: none;
   }
 
-  /* Cyberpunk glows */
   .glow-text {
+    text-shadow: 0 0 10px rgba(0, 153, 184, 0.6), 0 0 20px rgba(0, 153, 184, 0.3);
+  }
+
+  .dark .glow-text {
     text-shadow: 0 0 10px rgba(0, 255, 204, 0.8), 0 0 20px rgba(0, 255, 204, 0.4);
   }
 
   .glow-border {
+    box-shadow: 0 0 10px rgba(0, 153, 184, 0.15), inset 0 0 10px rgba(0, 153, 184, 0.05);
+    border-color: rgba(0, 153, 184, 0.4);
+  }
+
+  .glow-border:hover {
+    box-shadow: 0 0 15px rgba(0, 153, 184, 0.3), inset 0 0 15px rgba(0, 153, 184, 0.1);
+    border-color: rgba(0, 153, 184, 0.7);
+  }
+
+  .dark .glow-border {
     box-shadow: 0 0 10px rgba(0, 255, 204, 0.2), inset 0 0 10px rgba(0, 255, 204, 0.1);
     border-color: rgba(0, 255, 204, 0.5);
   }
 
-  .glow-border:hover {
-    box-shadow: 0 0 15px rgba(0, 255, 204, 0.4), inset 0 0 15px rgba(0, 255, 204, 0.2);
-    border-color: rgba(0, 255, 204, 0.8);
-  }
-
   .cyber-grid {
-    background-image: linear-gradient(rgba(0, 255, 204, 0.05) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(0, 255, 204, 0.05) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(0, 153, 184, 0.06) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0, 153, 184, 0.06) 1px, transparent 1px);
     background-size: 20px 20px;
   }
 }

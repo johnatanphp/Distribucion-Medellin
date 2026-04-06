@@ -1,15 +1,19 @@
 {
-  "name": "DISTRIMED - Sistema de Gestión",
+  "name": "DISTRIMED - Red de Distribución",
   "short_name": "DISTRIMED",
+  "description": "Sistema de gestión de red de distribución de moda para Medellín",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0e1a",
-  "theme_color": "#00FFCC",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f2ec",
+  "theme_color": "#0099b8",
+  "categories": ["business", "shopping"],
   "icons": [
     {
       "src": "/favicon.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

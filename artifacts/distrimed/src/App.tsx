@@ -8,6 +8,27 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
+  /* LIGHT MODE (default) — fondos crema, acentos cyan/aqua */
+  --bg:#f5f2ec;--bg1:#ede8e0;--bg2:#ffffff;--bg3:#f0ebe2;--bg4:#e8e1d6;
+  --bd:#d5cec4;--bd2:#c2bbb0;
+  --cy:#0099b8;--cy10:rgba(0,153,184,.12);--cy20:rgba(0,153,184,.28);
+  --or:#c94a1a;--or10:rgba(201,74,26,.1);
+  --gr:#007a52;--gr10:rgba(0,122,82,.1);
+  --ye:#b87c00;--re:#c41c38;--re10:rgba(196,28,56,.1);
+  --pu:#7c28bb;--pu10:rgba(124,40,187,.1);
+  --t0:#1a2030;--t1:#4d6070;--t2:#8898a8;
+  --r:10px;--rl:16px;--rxl:22px;
+  --cond:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+  --mono:'DM Mono',monospace;
+  --overlay-bg:rgba(210,205,195,0.88);
+  --login-grid-col:rgba(180,170,158,0.35);
+  --mob-bg-col:rgba(245,242,236,0.88);
+  --shadow-card:0 2px 16px rgba(0,0,0,0.08);
+  --shadow-login:0 12px 48px rgba(0,0,0,0.14);
+}
+body.dark{
+  /* DARK MODE */
   --bg:#050c1a;--bg1:#080f1e;--bg2:#0c1628;--bg3:#101d32;--bg4:#15243c;
   --bd:#1a2d47;--bd2:#253c5a;
   --cy:#00e5ff;--cy10:rgba(0,229,255,.1);--cy20:rgba(0,229,255,.2);
@@ -16,10 +37,11 @@ const CSS = `
   --ye:#ffb700;--re:#ff3355;--re10:rgba(255,51,85,.1);
   --pu:#a855f7;--pu10:rgba(168,85,247,.1);
   --t0:#e8f0fe;--t1:#8ba0be;--t2:#445870;
-  --r:10px;--rl:16px;--rxl:22px;
-  --cond:'Barlow Condensed',sans-serif;
-  --body:'Barlow',sans-serif;
-  --mono:'DM Mono',monospace;
+  --overlay-bg:rgba(5,12,26,0.92);
+  --login-grid-col:rgba(26,45,71,0.3);
+  --mob-bg-col:rgba(5,12,26,0.75);
+  --shadow-card:0 8px 32px rgba(0,0,0,0.4);
+  --shadow-login:0 24px 80px rgba(0,0,0,0.5);
 }
 html,body{height:100%;font-family:var(--body);background:var(--bg);color:var(--t0);overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--body);border:none}
@@ -115,16 +137,16 @@ tr:hover td{background:var(--bg3)}
 .sec-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
 .sec-ttl{font-family:var(--cond);font-size:1.25rem;font-weight:800}
 
-.overlay{position:fixed;inset:0;background:rgba(5,12,26,.9);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;backdrop-filter:blur(8px);animation:fadein .18s}
+.overlay{position:fixed;inset:0;background:var(--overlay-bg);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;backdrop-filter:blur(8px);animation:fadein .18s}
 .modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--rxl);padding:26px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;animation:slideup .22s}
 .modal-lg{max-width:720px}
 .modal-ttl{font-family:var(--cond);font-size:1.2rem;font-weight:800;margin-bottom:18px}
 
 .alert{padding:10px 14px;border-radius:var(--r);font-size:.875rem;margin-bottom:12px}
-.al-err{background:var(--re10);border:1px solid rgba(255,51,85,.25);color:#ff8fa3}
-.al-ok{background:var(--gr10);border:1px solid rgba(0,214,143,.25);color:#6ee7b7}
-.al-warn{background:rgba(255,183,0,.1);border:1px solid rgba(255,183,0,.25);color:#fcd34d}
-.al-cy{background:var(--cy10);border:1px solid rgba(0,229,255,.25);color:#67e8f9}
+.al-err{background:var(--re10);border:1px solid rgba(196,28,56,.25);color:var(--re)}
+.al-ok{background:var(--gr10);border:1px solid rgba(0,122,82,.25);color:var(--gr)}
+.al-warn{background:rgba(184,124,0,.1);border:1px solid rgba(184,124,0,.25);color:var(--ye)}
+.al-cy{background:var(--cy10);border:1px solid var(--cy20);color:var(--cy)}
 
 .tabs{display:flex;background:var(--bg3);border-radius:var(--r);padding:3px;gap:3px;margin-bottom:18px;flex-wrap:wrap}
 .tab{flex:1;text-align:center;padding:7px 10px;border-radius:8px;font-family:var(--cond);font-size:.85rem;font-weight:700;color:var(--t2);cursor:pointer;border:none;background:none;transition:all .16s;white-space:nowrap}
@@ -142,8 +164,8 @@ tr:hover td{background:var(--bg3)}
 
 .login-pg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
 .login-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 15% 60%,rgba(0,229,255,.07) 0%,transparent 70%),radial-gradient(ellipse 50% 40% at 85% 30%,rgba(255,96,48,.04) 0%,transparent 70%)}
-.login-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(26,45,71,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(26,45,71,.3) 1px,transparent 1px);background-size:40px 40px}
-.login-card{width:100%;max-width:420px;background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--rxl);padding:36px;position:relative;z-index:1;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.login-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--login-grid-col) 1px,transparent 1px),linear-gradient(90deg,var(--login-grid-col) 1px,transparent 1px);background-size:40px 40px}
+.login-card{width:100%;max-width:420px;background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--rxl);padding:36px;position:relative;z-index:1;box-shadow:var(--shadow-login)}
 .login-logo{font-family:var(--cond);font-size:2rem;font-weight:900;color:var(--cy);letter-spacing:.06em;margin-bottom:2px}
 .login-sub{color:var(--t2);font-size:.8rem;margin-bottom:24px}
 .demo-box{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:10px 13px;margin-bottom:18px;font-size:.76rem;color:var(--t1)}
@@ -265,7 +287,7 @@ tr:hover td{background:var(--bg3)}
   .bottom-nav{display:flex}
   .toast-wrap{bottom:72px}
 }
-.mob-bg{display:none;position:fixed;inset:0;background:rgba(5,12,26,.75);z-index:199}
+.mob-bg{display:none;position:fixed;inset:0;background:var(--mob-bg-col);z-index:199}
 .mob-bg.show{display:block}
 .burger{display:none;padding:8px;background:none;border:none;color:var(--t0);font-size:1.3rem;cursor:pointer}
 @media(max-width:900px){.burger{display:flex}}
@@ -509,7 +531,7 @@ function mapRealUser(realUser) {
   return appUser;
 }
 
-function LoginPage({ onLogin }) {
+function LoginPage({ onLogin, dark, setDark }) {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -576,7 +598,8 @@ function LoginPage({ onLogin }) {
       <div className="login-card">
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
           <span style={{fontSize:"2rem"}}>👗</span>
-          <div className="login-logo">DistriMed</div>
+          <div className="login-logo" style={{flex:1}}>DistriMed</div>
+          <button className="ico-btn" onClick={()=>setDark&&setDark(d=>!d)} title={dark?"Modo claro":"Modo oscuro"} style={{fontSize:"1.1rem",padding:"6px 9px",flexShrink:0}}>{dark?"☀️":"🌙"}</button>
         </div>
         <div className="login-sub">Red de distribución de moda — Medellín · 400+ tiendas</div>
 
@@ -591,7 +614,7 @@ function LoginPage({ onLogin }) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
             {DEMO.map(([em,pw,icon,label])=>(
               <button key={em} disabled={!!demoLoading||loading} onClick={()=>quickLogin(em,pw)}
-                style={{background:demoLoading===em?"rgba(0,229,255,.15)":"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px",cursor:"pointer",color:"var(--t1)",textAlign:"left",fontSize:".82rem",display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
+                style={{background:demoLoading===em?"var(--cy10)":"var(--bg3)",border:"1px solid var(--bd)",borderRadius:8,padding:"8px 10px",cursor:"pointer",color:"var(--t1)",textAlign:"left",fontSize:".82rem",display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
                 <span style={{fontSize:"1rem"}}>{demoLoading===em?"⏳":icon}</span>
                 <span style={{fontWeight:600}}>{label}</span>
               </button>
@@ -2377,6 +2400,12 @@ export default function App() {
   const [userLoc,setUserLoc] = useState(null);
   const [locLoading,setLocLoading] = useState(false);
   const [wishlist,setWishlist] = useState([]);
+  const [dark,setDark] = useState(()=>localStorage.getItem("distrimed-theme")==="dark");
+
+  useEffect(()=>{
+    if(dark){ document.body.classList.add("dark"); localStorage.setItem("distrimed-theme","dark"); }
+    else { document.body.classList.remove("dark"); localStorage.setItem("distrimed-theme","light"); }
+  },[dark]);
 
   useEffect(()=>{
     if(user){
@@ -2397,7 +2426,7 @@ export default function App() {
     } else { setUserLoc({lat:6.2442,lng:-75.5812}); setLocLoading(false); setPage("map"); }
   },[]);
 
-  if(!user) return <ToastProvider><style>{CSS}</style><LoginPage onLogin={u=>setUser(u)}/></ToastProvider>;
+  if(!user) return <ToastProvider><style>{CSS}</style><LoginPage onLogin={u=>setUser(u)} dark={dark} setDark={setDark}/></ToastProvider>;
 
   const navAdmin = [
     {sec:"Principal"},
@@ -2525,6 +2554,9 @@ export default function App() {
               </button>
             )}
             {user.role==="store"&&(()=>{const s=db.stores.find(st=>st.id===user.storeId);return s?<span className="subdomain-pill" style={{marginLeft:"auto",fontSize:".6rem"}}>🌐 {s.subdomain}.distrimed.co</span>:null;})()}
+            <button className="ico-btn" onClick={()=>setDark(d=>!d)} title={dark?"Modo claro":"Modo oscuro"} style={{fontSize:"1.1rem",padding:"6px 9px",marginLeft:user.role==="client"||user.role==="store"?"4px":"auto"}}>
+              {dark?"☀️":"🌙"}
+            </button>
           </div>
 
           <div className="content">
