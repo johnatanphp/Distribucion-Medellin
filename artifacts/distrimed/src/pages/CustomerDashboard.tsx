@@ -32,7 +32,7 @@ export default function CustomerDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [view, setView] = useState<"catalog" | "map">("catalog");
+  const [view, setView] = useState<"catalog" | "map">("map");
   const [selectedStore, setSelectedStore] = useState<any | null>(null);
 
   const { data: products, isLoading: productsLoading } = useGetProducts({ maxPrice });
