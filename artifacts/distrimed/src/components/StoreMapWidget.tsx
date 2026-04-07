@@ -4,13 +4,13 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useGetStores, useGetProducts } from "@workspace/api-client-react";
 import { useAuth } from "@/components/AuthProvider";
+import { useGeo } from "@/contexts/GeoContext";
 import {
   Store, Search, MapPin, Navigation, X,
   Activity, AlertCircle, Package,
   Layers, Filter, Phone, LocateFixed, LocateOff, ChevronDown,
 } from "lucide-react";
 
-// ─── TIPOS ────────────────────────────────────────────────────────────────────
 interface StoreItem {
   id: number;
   name: string;
@@ -24,7 +24,6 @@ interface StoreItem {
   productCount?: number;
 }
 
-// ─── ZONAS DE MEDELLÍN ────────────────────────────────────────────────────────
 const ZONES = [
   { key: "all", label: "Toda la Ciudad", color: "#00FFCC" },
   { key: "norte", label: "Norte", color: "#00BFFF" },
@@ -46,7 +45,6 @@ function getZoneColor(lat?: number | null, lng?: number | null): string {
   return ZONES.find((z2) => z2.key === z)?.color ?? "#00FFCC";
 }
 
-// ─── ÍCONOS ───────────────────────────────────────────────────────────────────
 function makeStoreIcon(color: string, size: number, pulse = false, isOwn = false) {
   const glow = isOwn ? `drop-shadow(0 0 8px ${color})` : `drop-shadow(0 0 4px ${color})`;
   const ring = pulse
@@ -84,7 +82,6 @@ function makeUserIcon() {
   return L.divIcon({ html: svg, className: "", iconSize: [40, 40], iconAnchor: [20, 20] });
 }
 
-// ─── AUTO-PAN AL USUARIO ──────────────────────────────────────────────────────
 function PanToUser({ pos }: { pos: { lat: number; lng: number } | null }) {
   const map = useMap();
   const pannedRef = useRef(false);
@@ -110,7 +107,6 @@ function FitBoundsToStores({ stores }: { stores: StoreItem[] }) {
   return null;
 }
 
-// ─── DISTANCIA HAVERSINE ──────────────────────────────────────────────────────
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -119,16 +115,24 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ─── TIPOS DE PROPS ───────────────────────────────────────────────────────────
 interface Props {
   height?: string;
   showWidgets?: boolean;
   compact?: boolean;
+  initialCategory?: string;
+  initialMaxPrice?: string;
 }
 
-export default function StoreMapWidget({ height = "480px", showWidgets = true, compact = false }: Props) {
+export default function StoreMapWidget({
+  height = "480px",
+  showWidgets = true,
+  compact = false,
+  initialCategory = "all",
+  initialMaxPrice = "",
+}: Props) {
   const { user } = useAuth();
   const role = user?.role ?? "customer";
+  const { position: userPos, status: locStatus, retry: requestLocation } = useGeo();
 
   const { data: storesRaw = [] } = useGetStores();
   const stores: StoreItem[] = (storesRaw as StoreItem[]).filter((s) => s.active);
@@ -136,26 +140,21 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
   const { data: productsRaw = [] } = useGetProducts({});
   const products = productsRaw as any[];
 
-  // ── Estado de filtros ──────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [zone, setZone] = useState("all");
   const [selected, setSelected] = useState<StoreItem | null>(null);
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [locStatus, setLocStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
   const [showInactive, setShowInactive] = useState(role === "superadmin");
-  const [maxPrice, setMaxPrice] = useState<string>("");
-  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [maxPrice, setMaxPrice] = useState<string>(initialMaxPrice);
+  const [filterCategory, setFilterCategory] = useState<string>(initialCategory);
   const [showFilters, setShowFilters] = useState(false);
 
-  // ── Categorías disponibles ─────────────────────────────────────────────────
   const categories = useMemo(() => {
     const cats = Array.from(new Set(products.map((p: any) => p.category).filter(Boolean)));
     return ["all", ...cats];
   }, [products]);
 
-  // ── IDs de tiendas que cumplen filtros de producto ─────────────────────────
   const storeIdsMatchingProduct = useMemo(() => {
-    if (filterCategory === "all" && !maxPrice) return null; // sin filtro de producto
+    if (filterCategory === "all" && !maxPrice) return null;
     return new Set(
       products
         .filter((p: any) => {
@@ -167,7 +166,6 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
     );
   }, [products, filterCategory, maxPrice]);
 
-  // ── Filtrar tiendas ────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return stores
       .filter((s) => {
@@ -184,24 +182,6 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
         return da - db;
       });
   }, [stores, zone, search, showInactive, storeIdsMatchingProduct, userPos]);
-
-  // ── Solicitar ubicación automáticamente ───────────────────────────────────
-  const requestLocation = () => {
-    if (!navigator.geolocation) { setLocStatus("denied"); return; }
-    setLocStatus("requesting");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocStatus("granted");
-      },
-      () => setLocStatus("denied"),
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  useEffect(() => {
-    requestLocation();
-  }, []);
 
   const distKm = (s: StoreItem) => {
     if (!userPos || !s.lat || !s.lng) return null;
@@ -223,7 +203,6 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── STATS (solo superadmin/store) ──────────────────────── */}
       {showWidgets && !compact && role !== "customer" && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard icon={<Store className="w-4 h-4" />} label="Tiendas activas" value={totalActive} color="#00FFCC" />
@@ -233,12 +212,12 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
         </div>
       )}
 
-      {/* ── BANNER UBICACIÓN ───────────────────────────────────── */}
+      {/* GPS Status Banner */}
       {locStatus === "idle" || locStatus === "requesting" ? (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "rgba(0,255,204,0.08)", border: "1px solid rgba(0,255,204,0.2)" }}>
           <LocateFixed className="w-4 h-4 text-primary animate-pulse flex-shrink-0" />
           <span className="font-mono text-xs text-primary flex-1">
-            {locStatus === "requesting" ? "Obteniendo tu ubicación..." : "Solicitando permisos de ubicación..."}
+            {locStatus === "requesting" ? "Obteniendo tu ubicación GPS..." : "Iniciando GPS..."}
           </span>
         </div>
       ) : locStatus === "denied" ? (
@@ -252,7 +231,9 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
       ) : (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "rgba(0,255,204,0.06)", border: "1px solid rgba(0,255,204,0.15)" }}>
           <LocateFixed className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="font-mono text-xs text-primary flex-1">Ubicación activa — mostrando tiendas más cercanas primero</span>
+          <span className="font-mono text-xs text-primary flex-1">
+            GPS activo · mostrando tiendas más cercanas primero
+          </span>
           {filtered.length > 0 && filtered[0].lat && filtered[0].lng && (
             <span className="font-mono text-[10px] text-muted-foreground">
               Más cercana: {(() => { const d = distKm(filtered[0]); return d ? (d < 1 ? `${Math.round(d * 1000)}m` : `${d.toFixed(1)}km`) : "–"; })()}
@@ -261,12 +242,10 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
         </div>
       )}
 
-      {/* ── PANEL DE FILTROS ───────────────────────────────────── */}
+      {/* Filter Panel */}
       <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(10,14,26,0.85)", border: "1px solid rgba(255,255,255,0.07)" }}>
-        {/* Barra principal de búsqueda */}
         <div className="flex flex-col gap-2 p-3">
           <div className="flex gap-2">
-            {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <input
@@ -276,7 +255,6 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
                 className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-white placeholder-muted-foreground outline-none focus:border-primary/40"
               />
             </div>
-            {/* Botón filtros de producto */}
             <button
               onClick={() => setShowFilters((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono uppercase tracking-wide transition-all flex-shrink-0"
@@ -292,12 +270,10 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
             </button>
           </div>
 
-          {/* Filtros expandibles de producto/precio */}
           {showFilters && (
             <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-white/5">
-              {/* Categoría */}
               <div className="flex-1">
-                <label className="block font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Categoría de producto</label>
+                <label className="block font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Categoría</label>
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
@@ -310,9 +286,8 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
                   ))}
                 </select>
               </div>
-              {/* Precio máximo */}
-              <div className="w-full sm:w-40">
-                <label className="block font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Precio máximo</label>
+              <div className="w-full sm:w-44">
+                <label className="block font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Precio máximo (COP)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-primary/60 font-mono text-xs">$</span>
                   <input
@@ -324,19 +299,17 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
                   />
                 </div>
               </div>
-              {/* Limpiar filtros */}
               {hasProductFilter && (
                 <button
                   onClick={() => { setFilterCategory("all"); setMaxPrice(""); }}
                   className="self-end px-3 py-2 rounded-xl text-[10px] font-mono text-red-400 border border-red-400/20 hover:bg-red-400/10 transition-all"
                 >
-                  Limpiar
+                  <X className="w-3 h-3 inline mr-1" />Limpiar
                 </button>
               )}
             </div>
           )}
 
-          {/* Pills de zona */}
           <div className="flex gap-1.5 flex-wrap">
             {ZONES.map((z) => (
               <button
@@ -368,7 +341,7 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
           </div>
         </div>
 
-        {/* ── MAPA ──────────────────────────────────────────────── */}
+        {/* MAP */}
         <div style={{ height, position: "relative" }}>
           <MapContainer
             center={[6.2442, -75.5812]}
@@ -385,13 +358,9 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
             />
             <ZoomControl position="bottomright" />
 
-            {/* Auto-pan a ubicación del usuario */}
             <PanToUser pos={userPos} />
-
-            {/* Si no hay ubicación, ajusta bounds a las tiendas */}
             {!userPos && <FitBoundsToStores stores={filtered.length ? filtered : stores} />}
 
-            {/* Marcador de usuario con radio de proximidad */}
             {userPos && (
               <>
                 <Marker position={[userPos.lat, userPos.lng]} icon={makeUserIcon()}>
@@ -409,7 +378,6 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
               </>
             )}
 
-            {/* Marcadores de tiendas */}
             {filtered.map((s) => {
               if (!s.lat || !s.lng) return null;
               const isOwn = role === "store" && s.id === user?.storeId;
@@ -427,7 +395,7 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
                   eventHandlers={{ click: () => setSelected(s) }}
                 >
                   <Popup>
-                    <div style={{ fontFamily: "monospace", minWidth: 210, color: "#fff", background: "transparent" }}>
+                    <div style={{ fontFamily: "monospace", minWidth: 220, color: "#fff", background: "transparent" }}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: zoneColor, boxShadow: `0 0 6px ${zoneColor}` }} />
                         <span className="font-bold text-sm" style={{ color: zoneColor }}>{s.name}</span>
@@ -451,7 +419,6 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
               );
             })}
 
-            {/* Radio tienda propia (store owner) */}
             {ownStore?.lat && ownStore?.lng && (
               <Circle
                 center={[ownStore.lat, ownStore.lng]}
@@ -461,185 +428,110 @@ export default function StoreMapWidget({ height = "480px", showWidgets = true, c
             )}
           </MapContainer>
 
-          {/* Badge flotante conteo */}
-          <div className="absolute top-3 left-3 z-[1000] pointer-events-none flex gap-2">
-            <div className="px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold" style={{ background: "rgba(10,14,26,0.92)", border: "1px solid rgba(0,255,204,0.3)", color: "#00FFCC", backdropFilter: "blur(12px)" }}>
-              {filtered.length} tienda{filtered.length !== 1 ? "s" : ""} {hasProductFilter ? "· filtradas" : "· " + (zone === "all" ? "Medellín" : ZONES.find((z) => z.key === zone)?.label)}
-            </div>
-          </div>
-
-          {/* Leyenda zonas */}
-          {!compact && (
-            <div className="absolute bottom-10 left-3 z-[1000] flex flex-col gap-1 pointer-events-none">
-              {ZONES.slice(1).map((z) => (
-                <div key={z.key} className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[9px] font-mono" style={{ background: "rgba(10,14,26,0.85)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                  <span className="w-2 h-2 rounded-full" style={{ background: z.color, boxShadow: `0 0 4px ${z.color}` }} />
-                  <span style={{ color: z.color }}>{z.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── LISTA DE TIENDAS CERCANAS ───────────────────────────── */}
-      {!compact && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Layers className="w-4 h-4 text-primary" />
-            <h2 className="font-mono text-sm font-bold text-white uppercase tracking-wider">
-              {userPos ? "Tiendas más cercanas" : "Puntos de distribución"}
-            </h2>
-            <span className="ml-auto text-[10px] font-mono text-muted-foreground">{filtered.length} disponibles</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map((s, idx) => {
-              const isOwn = role === "store" && s.id === user?.storeId;
-              const zoneColor = isOwn ? "#FFD700" : getZoneColor(s.lat, s.lng);
-              const dist = distKm(s);
-              const zoneName = ZONES.find((z) => z.key === getZone(s.lat, s.lng))?.label ?? "Centro";
-              const storeProducts = products.filter((p: any) => p.storeId === s.id);
-              const matchedProducts = storeProducts.filter((p: any) => {
-                const catOk = filterCategory === "all" || p.category === filterCategory;
-                const priceOk = !maxPrice || (p.price != null && p.price <= Number(maxPrice));
-                return catOk && priceOk;
-              });
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setSelected(s)}
-                  className="text-left rounded-2xl p-4 transition-all hover:scale-[1.01] relative"
-                  style={{
-                    background: isOwn ? "rgba(255,215,0,0.06)" : "rgba(10,14,26,0.85)",
-                    border: `1px solid ${selected?.id === s.id ? zoneColor + "60" : isOwn ? "rgba(255,215,0,0.25)" : "rgba(255,255,255,0.07)"}`,
-                    boxShadow: selected?.id === s.id ? `0 0 16px ${zoneColor}20` : "none",
-                  }}
-                >
-                  {/* Badge de distancia */}
-                  {userPos && dist !== null && idx < 3 && (
-                    <div className="absolute top-3 right-3 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full" style={{ background: zoneColor + "20", color: zoneColor, border: `1px solid ${zoneColor}40` }}>
-                      #{idx + 1} más cerca
-                    </div>
-                  )}
-                  <div className="flex items-start gap-3 mb-2">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: zoneColor + "18", border: `1px solid ${zoneColor}30` }}>
-                      <Store className="w-4 h-4" style={{ color: zoneColor }} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-mono text-xs font-bold text-white leading-tight truncate pr-16">{s.name}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{zoneName}</p>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground font-mono mb-2 line-clamp-1">{s.address}</p>
-                  <div className="flex items-center gap-3 text-[10px] font-mono text-muted-foreground flex-wrap">
-                    {s.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{s.phone}</span>}
-                    {storeProducts.length > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Package className="w-3 h-3" />
-                        {hasProductFilter ? `${matchedProducts.length}/${storeProducts.length}` : storeProducts.length} productos
-                      </span>
-                    )}
-                    {dist !== null && (
-                      <span className="flex items-center gap-1 ml-auto font-bold" style={{ color: zoneColor }}>
-                        <Navigation className="w-3 h-3" />
-                        {dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-            {filtered.length === 0 && (
-              <div className="col-span-full py-12 text-center rounded-2xl border border-dashed border-white/10">
-                <Package className="w-12 h-12 text-muted-foreground opacity-20 mx-auto mb-3" />
-                <p className="font-mono text-muted-foreground text-sm">Sin tiendas para estos filtros</p>
-                <button
-                  onClick={() => { setZone("all"); setFilterCategory("all"); setMaxPrice(""); setSearch(""); }}
-                  className="mt-2 font-mono text-xs text-primary hover:underline"
-                >
-                  Limpiar filtros
-                </button>
-              </div>
+          {/* Floating counter */}
+          <div
+            className="absolute top-3 left-3 z-[1000] px-3 py-1.5 rounded-xl font-mono text-xs flex items-center gap-2"
+            style={{ background: "rgba(10,14,26,0.9)", border: "1px solid rgba(0,255,204,0.2)", backdropFilter: "blur(8px)" }}
+          >
+            <Layers className="w-3.5 h-3.5 text-primary" />
+            <span className="text-primary font-bold">{filtered.length}</span>
+            <span className="text-muted-foreground">nodos</span>
+            {hasProductFilter && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(0,255,204,0.15)", color: "#00FFCC" }}>
+                filtrados
+              </span>
             )}
           </div>
         </div>
-      )}
 
-      {/* ── PANEL DETALLE TIENDA SELECCIONADA ─────────────────── */}
-      {selected && (
-        <div
-          className="fixed inset-x-4 bottom-4 sm:inset-auto sm:right-6 sm:bottom-6 sm:w-80 z-[1001] rounded-2xl p-5"
-          style={{ background: "rgba(10,14,26,0.97)", border: `1px solid ${getZoneColor(selected.lat, selected.lng)}40`, boxShadow: `0 0 32px ${getZoneColor(selected.lat, selected.lng)}18`, backdropFilter: "blur(20px)" }}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: getZoneColor(selected.lat, selected.lng) + "18", border: `1px solid ${getZoneColor(selected.lat, selected.lng)}30` }}>
-                <Store className="w-4 h-4" style={{ color: getZoneColor(selected.lat, selected.lng) }} />
-              </div>
-              <div>
-                <p className="font-mono text-sm font-bold text-white leading-tight">{selected.name}</p>
-                <p className="text-[10px] font-mono" style={{ color: getZoneColor(selected.lat, selected.lng) }}>
-                  {ZONES.find((z) => z.key === getZone(selected.lat, selected.lng))?.label}
-                </p>
-              </div>
+        {/* Store list below map */}
+        {showWidgets && filtered.length > 0 && (
+          <div className="border-t border-white/5">
+            <div className="p-3 space-y-1 max-h-72 overflow-y-auto">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 px-1 mb-2">
+                {userPos ? "Tiendas ordenadas por distancia" : "Nodos de distribución"}
+              </p>
+              {filtered.map((s) => {
+                const dist = distKm(s);
+                const storeProds = products.filter((p: any) => p.storeId === s.id);
+                const isSelected = selected?.id === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelected(isSelected ? null : s)}
+                    className="w-full text-left px-3 py-2 rounded-xl transition-all flex items-center gap-3"
+                    style={{
+                      background: isSelected ? "rgba(0,255,204,0.08)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${isSelected ? "rgba(0,255,204,0.3)" : "rgba(255,255,255,0.06)"}`,
+                    }}
+                  >
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: getZoneColor(s.lat, s.lng), boxShadow: `0 0 4px ${getZoneColor(s.lat, s.lng)}` }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-mono text-xs font-bold text-white truncate">{s.name}</p>
+                      <p className="font-mono text-[10px] text-muted-foreground truncate flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5 flex-shrink-0" />{s.address}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0 space-y-0.5">
+                      {dist !== null && (
+                        <p className="font-mono text-[10px] font-bold" style={{ color: "#00FFCC" }}>
+                          {dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`}
+                        </p>
+                      )}
+                      {storeProds.length > 0 && (
+                        <p className="font-mono text-[9px] text-muted-foreground">{storeProds.length} prod.</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-white transition-colors">
-              <X className="w-4 h-4" />
-            </button>
+
+            {/* Selected store detail */}
+            {selected && (
+              <div className="mx-3 mb-3 p-3 rounded-xl" style={{ background: "rgba(0,255,204,0.06)", border: "1px solid rgba(0,255,204,0.2)" }}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Store className="w-4 h-4 text-primary flex-shrink-0" />
+                      <span className="font-mono font-bold text-white text-sm">{selected.name}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px] font-mono text-muted-foreground">
+                      {selected.address && (
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-primary flex-shrink-0" />{selected.address}</span>
+                      )}
+                      {selected.phone && (
+                        <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-primary flex-shrink-0" />{selected.phone}</span>
+                      )}
+                      {(() => { const d = distKm(selected); return d ? (
+                        <span className="flex items-center gap-1 text-primary"><Navigation className="w-3 h-3 flex-shrink-0" />{d < 1 ? `${Math.round(d * 1000)}m de distancia` : `${d.toFixed(1)}km de distancia`}</span>
+                      ) : null; })()}
+                    </div>
+                    {selected.description && (
+                      <p className="text-[10px] text-muted-foreground/60 mt-1 line-clamp-2">{selected.description}</p>
+                    )}
+                  </div>
+                  <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-white flex-shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <p className="text-[11px] font-mono text-muted-foreground mb-3 leading-relaxed">{selected.description ?? selected.address}</p>
-          <div className="space-y-1.5 mb-3">
-            <DetailRow icon={<MapPin className="w-3 h-3" />} text={selected.address} />
-            {selected.phone && <DetailRow icon={<Phone className="w-3 h-3" />} text={selected.phone} />}
-            {(() => {
-              const d = distKm(selected);
-              return d !== null ? (
-                <DetailRow icon={<Navigation className="w-3 h-3" />} text={d < 1 ? `${Math.round(d * 1000)} metros de tu ubicación` : `${d.toFixed(2)} km de tu ubicación`} color={getZoneColor(selected.lat, selected.lng)} />
-              ) : null;
-            })()}
-            {(() => {
-              const sp = products.filter((p: any) => p.storeId === selected.id);
-              const mp = sp.filter((p: any) => {
-                const catOk = filterCategory === "all" || p.category === filterCategory;
-                const priceOk = !maxPrice || (p.price != null && p.price <= Number(maxPrice));
-                return catOk && priceOk;
-              });
-              return sp.length > 0 ? (
-                <DetailRow icon={<Package className="w-3 h-3" />} text={hasProductFilter ? `${mp.length} de ${sp.length} productos coinciden` : `${sp.length} productos disponibles`} color={hasProductFilter ? "#00FFCC" : undefined} />
-              ) : null;
-            })()}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] px-3 py-1 rounded-full font-mono font-bold" style={{ background: selected.active ? "rgba(0,255,100,0.12)" : "rgba(255,68,68,0.12)", color: selected.active ? "#00CC55" : "#FF5555" }}>
-              {selected.active ? "● Tienda Activa" : "○ Inactiva"}
-            </span>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-// ─── SUBCOMPONENTES ───────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
   return (
-    <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: "rgba(10,14,26,0.85)", border: "1px solid rgba(255,255,255,0.07)" }}>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color + "15", border: `1px solid ${color}30` }}>
-        <span style={{ color }}>{icon}</span>
+    <div className="px-4 py-3 rounded-xl" style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
+      <div className="flex items-center gap-2 mb-1" style={{ color }}>
+        {icon}
+        <span className="font-mono text-[9px] uppercase tracking-widest opacity-70">{label}</span>
       </div>
-      <div>
-        <p className="font-mono text-xl font-bold text-white leading-none">{value}</p>
-        <p className="font-mono text-[10px] text-muted-foreground mt-0.5">{label}</p>
-      </div>
-    </div>
-  );
-}
-
-function DetailRow({ icon, text, color }: { icon: React.ReactNode; text: string; color?: string }) {
-  return (
-    <div className="flex items-start gap-2">
-      <span className="text-muted-foreground mt-0.5 flex-shrink-0" style={color ? { color } : {}}>{icon}</span>
-      <span className="font-mono text-[11px]" style={color ? { color } : { color: "#ccc" }}>{text}</span>
+      <p className="font-mono text-xl font-bold" style={{ color }}>{value}</p>
     </div>
   );
 }

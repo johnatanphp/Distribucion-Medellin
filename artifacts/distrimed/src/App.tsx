@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { CartProvider } from "@/contexts/CartContext";
+import { GeoProvider } from "@/contexts/GeoContext";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { getAuthToken } from "@/lib/auth";
 
@@ -43,25 +44,27 @@ function AppRouter() {
   }
 
   return (
-    <Switch>
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/store" component={StoreDashboard} />
-      <Route path="/customer" component={CustomerDashboard} />
-      <Route path="/customer/orders" component={CustomerOrders} />
-      <Route path="/customer/wishlist" component={CustomerWishlist} />
-      <Route path="/customer/cart" component={CustomerCart} />
-      <Route path="/profile" component={ProfilePage} />
-      <Route path="/">
-        {user.role === "superadmin" ? (
-          <Redirect to="/admin" />
-        ) : user.role === "store" ? (
-          <Redirect to="/store" />
-        ) : (
-          <Redirect to="/customer" />
-        )}
-      </Route>
-      <Route component={NotFound} />
-    </Switch>
+    <GeoProvider>
+      <Switch>
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/store" component={StoreDashboard} />
+        <Route path="/customer" component={CustomerDashboard} />
+        <Route path="/customer/orders" component={CustomerOrders} />
+        <Route path="/customer/wishlist" component={CustomerWishlist} />
+        <Route path="/customer/cart" component={CustomerCart} />
+        <Route path="/profile" component={ProfilePage} />
+        <Route path="/">
+          {user.role === "superadmin" ? (
+            <Redirect to="/admin" />
+          ) : user.role === "store" ? (
+            <Redirect to="/store" />
+          ) : (
+            <Redirect to="/customer" />
+          )}
+        </Route>
+        <Route component={NotFound} />
+      </Switch>
+    </GeoProvider>
   );
 }
 
