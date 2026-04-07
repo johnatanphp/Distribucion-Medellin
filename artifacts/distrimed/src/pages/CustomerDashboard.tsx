@@ -3,6 +3,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import {
   useGetProducts,
   useCreateRating,
+  useGetStores,
   getGetProductsQueryKey
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Search, MapPin, Star, Package, ShoppingCart, Heart, Map, LayoutGrid, Phone, Store
+  Search, MapPin, Star, Package, ShoppingCart, Heart, Map, LayoutGrid, Phone, Store, Navigation, Layers
 } from "lucide-react";
 import StoreMapWidget from "@/components/StoreMapWidget";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,8 +33,15 @@ export default function CustomerDashboard() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [view, setView] = useState<"catalog" | "map">("catalog");
+  const [selectedStore, setSelectedStore] = useState<any | null>(null);
 
   const { data: products, isLoading: productsLoading } = useGetProducts({ maxPrice });
+  const { data: stores, isLoading: storesLoading } = useGetStores();
+
+  const handleStoreClick = (store: any) => {
+    setSelectedStore(store);
+    setView("map");
+  };
   const createRating = useCreateRating({
     mutation: {
       onSuccess: () => {
@@ -98,106 +106,8 @@ export default function CustomerDashboard() {
 
         {/* ── MAP VIEW ── */}
         {view === "map" && (
-          <StoreMapWidget height="560px" showWidgets />
-        )}
-        {false && (
-          <div className="hidden">
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={storeSearch}
-                      onChange={(e) => setStoreSearch(e.target.value)}
-                      placeholder="Buscar tienda..."
-                      className="pl-8 pr-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white font-mono text-xs w-44 placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleGetLocation}
-                    className="bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-black font-mono text-[10px] uppercase h-8 px-3 rounded-lg"
-                  >
-                    <Navigation className="w-3.5 h-3.5 mr-1.5" /> Localizar
-                  </Button>
-                </div>
-              </div>
-
-              {/* Map + sidebar layout */}
-              <div className="flex h-[480px]">
-                {/* Store list sidebar */}
-                <div className="w-56 border-r border-white/5 flex flex-col bg-black/30 overflow-hidden hidden sm:flex">
-                  <div className="p-3 border-b border-white/5">
-                    <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-                      {filteredStoreMarkers.length} tienda{filteredStoreMarkers.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    {storesLoading ? (
-                      <div className="p-3 space-y-2">
-                        {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-lg bg-white/5" />)}
-                      </div>
-                    ) : (
-                      <div className="p-2 space-y-1">
-                        {filteredStoreMarkers.map((store) => (
-                          <button
-                            key={store.id}
-                            onClick={() => handleStoreClick(store)}
-                            className={cn(
-                              "w-full text-left p-2.5 rounded-lg transition-all border",
-                              selectedStore?.id === store.id
-                                ? "border-primary/40 bg-primary/10"
-                                : "border-transparent hover:bg-white/5 hover:border-white/10"
-                            )}
-                          >
-                            <div className="flex items-start gap-2">
-                              <div
-                                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                                style={{ background: "rgba(0,255,204,0.1)", border: "1px solid rgba(0,255,204,0.2)" }}
-                              >
-                                <Store className="w-3.5 h-3.5 text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-mono text-xs font-bold text-white truncate">{store.name}</p>
-                                <p className="font-mono text-[9px] text-muted-foreground truncate mt-0.5">{store.address || store.description}</p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                        {filteredStoreMarkers.length === 0 && (
-                          <div className="p-4 text-center">
-                            <p className="font-mono text-[10px] text-muted-foreground">Sin resultados</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Map */}
-                <div className="flex-1 relative">
-                  <MapComponent
-                    center={mapCenter}
-                    zoom={selectedStore ? 16 : 13}
-                    userLocation={userLocation}
-                    stores={filteredStoreMarkers}
-                    selectedStoreId={selectedStore?.id}
-                    onStoreClick={handleStoreClick}
-                  />
-                  {/* Legend overlay */}
-                  <div className="absolute bottom-3 right-3 z-[400] rounded-lg px-3 py-2 text-[9px] font-mono space-y-1" style={{ background: "rgba(5,8,16,0.9)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ background: "#00FFCC", boxShadow: "0 0 6px #00FFCC" }} />
-                      <span className="text-muted-foreground">Tienda activa</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ background: "#8b5cf6", boxShadow: "0 0 6px #8b5cf6" }} />
-                      <span className="text-muted-foreground">Tu ubicación</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <>
+            <StoreMapWidget height="560px" showWidgets />
 
             {/* Selected store detail */}
             {selectedStore && (
@@ -300,7 +210,7 @@ export default function CustomerDashboard() {
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
 
         {/* ── CATALOG VIEW ── */}
