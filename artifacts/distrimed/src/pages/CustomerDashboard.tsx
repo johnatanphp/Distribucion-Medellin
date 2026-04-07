@@ -1,8 +1,7 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import DashboardLayout from "./layouts/DashboardLayout";
 import {
   useGetProducts,
-  useGetStores,
   useCreateRating,
   getGetProductsQueryKey
 } from "@workspace/api-client-react";
@@ -15,18 +14,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Search, MapPin, Star, Package, ShoppingCart, Heart, Map, LayoutGrid,
-  Navigation, Phone, ExternalLink, Store, Layers, Filter, ChevronLeft,
-  ChevronRight as ChevronRightIcon
+  Search, MapPin, Star, Package, ShoppingCart, Heart, Map, LayoutGrid, Phone, Store
 } from "lucide-react";
-import MapComponent, { StoreMarker } from "@/components/MapComponent";
+import StoreMapWidget from "@/components/StoreMapWidget";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { addToWishlist, removeFromWishlist, isInWishlist } from "./CustomerWishlist";
 import { cn } from "@/lib/utils";
-
-const MEDELLÍN: [number, number] = [6.2442, -75.5812];
 
 export default function CustomerDashboard() {
   const queryClient = useQueryClient();
@@ -37,13 +32,7 @@ export default function CustomerDashboard() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [view, setView] = useState<"catalog" | "map">("catalog");
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>(MEDELLÍN);
-  const [selectedStore, setSelectedStore] = useState<StoreMarker | null>(null);
-  const [storeSearch, setStoreSearch] = useState("");
-  const storeListRef = useRef<HTMLDivElement>(null);
 
-  const { data: stores, isLoading: storesLoading } = useGetStores({ active: true });
   const { data: products, isLoading: productsLoading } = useGetProducts({ maxPrice });
   const createRating = useCreateRating({
     mutation: {
@@ -53,41 +42,6 @@ export default function CustomerDashboard() {
       }
     }
   });
-
-  const handleGetLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-          setUserLocation(loc);
-          setMapCenter(loc);
-          toast({ title: "Ubicación detectada", description: "Mostrando tiendas cercanas a tu posición." });
-        },
-        () => toast({ title: "Error de ubicación", description: "Activa el GPS para ver tiendas cercanas.", variant: "destructive" })
-      );
-    }
-  };
-
-  const storeMarkers: StoreMarker[] = (stores ?? []).map((s) => ({
-    id: s.id,
-    name: s.name,
-    lat: s.lat,
-    lng: s.lng,
-    description: s.description,
-    address: s.address,
-    phone: s.phone,
-    active: s.active,
-  }));
-
-  const filteredStoreMarkers = storeMarkers.filter((s) =>
-    s.name.toLowerCase().includes(storeSearch.toLowerCase()) ||
-    (s.address || "").toLowerCase().includes(storeSearch.toLowerCase())
-  );
-
-  const handleStoreClick = (store: StoreMarker) => {
-    setSelectedStore(store);
-    setMapCenter([store.lat, store.lng]);
-  };
 
   const categories = ["all", ...Array.from(new Set(products?.map((p) => p.category) ?? []))];
 
@@ -137,22 +91,17 @@ export default function CustomerDashboard() {
           )}
           {view === "map" && (
             <span className="ml-auto text-[10px] font-mono text-muted-foreground">
-              {stores?.length ?? 0} tiendas activas
+              Área Metropolitana · Medellín
             </span>
           )}
         </div>
 
         {/* ── MAP VIEW ── */}
         {view === "map" && (
-          <div className="space-y-5">
-            {/* Main map widget */}
-            <div className="rounded-2xl overflow-hidden border border-white/10" style={{ background: "rgba(10,14,26,0.8)" }}>
-              {/* Map toolbar */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5">
-                <div className="flex items-center gap-2 flex-1">
-                  <Store className="w-4 h-4 text-primary" />
-                  <span className="font-mono text-xs text-primary uppercase tracking-widest">Red de Distribución · Medellín</span>
-                </div>
+          <StoreMapWidget height="560px" showWidgets />
+        )}
+        {false && (
+          <div className="hidden">
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />

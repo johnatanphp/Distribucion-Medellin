@@ -6,7 +6,8 @@ import {
   getGetStoresQueryKey, getGetGlobalStatsQueryKey, getGetUsersQueryKey
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Store, Users, Power, PowerOff, Plus, Trash2, Edit, BarChart2, ShieldCheck } from "lucide-react";
+import { Activity, Store, Users, Power, PowerOff, Plus, Trash2, Edit, BarChart2, ShieldCheck, Map } from "lucide-react";
+import StoreMapWidget from "@/components/StoreMapWidget";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-type Tab = "overview" | "stores" | "users";
+type Tab = "overview" | "stores" | "users" | "mapa";
 
 export default function AdminDashboard() {
   const queryClient = useQueryClient();
@@ -45,6 +46,7 @@ export default function AdminDashboard() {
     { id: "overview", label: "Resumen", icon: BarChart2 },
     { id: "stores", label: "Tiendas", icon: Store },
     { id: "users", label: "Usuarios", icon: Users },
+    { id: "mapa", label: "Mapa", icon: Map },
   ];
 
   return (
@@ -281,6 +283,17 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Mapa Tab */}
+        {tab === "mapa" && (
+          <div>
+            <div className="mb-4">
+              <h2 className="font-mono text-sm font-bold text-primary uppercase tracking-wider mb-1">Cobertura del Área Metropolitana</h2>
+              <p className="font-mono text-[11px] text-muted-foreground">Visualiza todas las sucursales activas e inactivas. Filtra por zona y monitorea la distribución geográfica de la red.</p>
+            </div>
+            <StoreMapWidget height="580px" showWidgets />
+          </div>
         )}
       </div>
     </DashboardLayout>

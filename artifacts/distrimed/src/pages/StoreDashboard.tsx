@@ -26,6 +26,7 @@ import { Package, Plus, MapPin, Edit, Trash2, Activity, Star } from "lucide-reac
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import MapComponent from "@/components/MapComponent";
+import StoreMapWidget from "@/components/StoreMapWidget";
 
 export default function StoreDashboard() {
   const { user } = useAuth();
@@ -188,6 +189,17 @@ export default function StoreDashboard() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Mapa de Red – vista para store owner */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="font-mono text-sm font-bold text-primary uppercase tracking-wider">Red de Distribución · Medellín</h2>
+              <p className="font-mono text-[10px] text-muted-foreground mt-0.5">Tu tienda resaltada en dorado. Explora toda la red de sucursales.</p>
+            </div>
+          </div>
+          <StoreMapWidget height="400px" showWidgets={false} compact={false} />
         </div>
 
         {/* Low Stock Alerts */}
