@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { CartProvider } from "@/contexts/CartContext";
-import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { getAuthToken } from "@/lib/auth";
 
 import PWAInstallBanner from "@/components/PWAInstallBanner";
@@ -17,7 +17,6 @@ import CustomerCart from "@/pages/CustomerCart";
 import ProfilePage from "@/pages/ProfilePage";
 import NotFound from "@/pages/not-found";
 
-setBaseUrl("/api");
 setAuthTokenGetter(() => getAuthToken() || "");
 
 const queryClient = new QueryClient({
