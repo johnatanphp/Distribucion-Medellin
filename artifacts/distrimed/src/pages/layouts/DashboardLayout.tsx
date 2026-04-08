@@ -1,15 +1,14 @@
 import { ReactNode, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import {
-  LogOut, LayoutDashboard, Package, Store, Users, Activity,
-  ShoppingCart, Heart, ClipboardList, User, Menu, X, ChevronRight,
-  Map, Zap, BarChart3, Settings
+  LogOut, Package, Store, Users, Activity,
+  ShoppingCart, Heart, ClipboardList, User, Menu, X,
+  Map, Zap, BarChart3, Home, LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
-import { Badge } from "@/components/ui/badge";
 
 interface NavItem {
   label: string;
@@ -29,22 +28,20 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
     switch (user?.role) {
       case "superadmin":
         return [
-          { label: "Resumen Global", icon: Zap, href: "/admin", color: "#00FFCC" },
-          { label: "Tiendas", icon: Store, href: "/admin?tab=stores", color: "#00FFCC" },
-          { label: "Usuarios", icon: Users, href: "/admin?tab=users", color: "#00FFCC" },
+          { label: "Inicio", icon: Home, href: "/admin", color: "#00FFCC" },
+          { label: "Panel Global", icon: BarChart3, href: "/admin/dashboard", color: "#00FFCC" },
           { label: "Mi Perfil", icon: User, href: "/profile", color: "#8b5cf6" },
         ];
       case "store":
         return [
-          { label: "Panel de Tienda", icon: BarChart3, href: "/store", color: "#f97316" },
-          { label: "Inventario", icon: Package, href: "/store?tab=products", color: "#f97316" },
-          { label: "Estadísticas", icon: Activity, href: "/store?tab=stats", color: "#f97316" },
+          { label: "Inicio", icon: Home, href: "/store", color: "#f97316" },
+          { label: "Panel de Tienda", icon: BarChart3, href: "/store/dashboard", color: "#f97316" },
           { label: "Mi Perfil", icon: User, href: "/profile", color: "#8b5cf6" },
         ];
       case "customer":
         return [
-          { label: "Catálogo", icon: Package, href: "/customer", color: "#00FFCC" },
-          { label: "Mapa de Tiendas", icon: Map, href: "/customer?tab=map", color: "#00FFCC" },
+          { label: "Inicio · Mapa", icon: Map, href: "/customer", color: "#00FFCC" },
+          { label: "Catálogo", icon: LayoutGrid, href: "/customer/catalog", color: "#00FFCC" },
           { label: "Mis Pedidos", icon: ClipboardList, href: "/customer/orders", color: "#00FFCC" },
           { label: "Lista de Deseos", icon: Heart, href: "/customer/wishlist", color: "#ec4899" },
           { label: "Carrito", icon: ShoppingCart, href: "/customer/cart", color: "#00FFCC", badge: count },
@@ -65,12 +62,12 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
   const rc = roleConfig[user?.role as keyof typeof roleConfig] || roleConfig.customer;
 
   const isActiveHref = (href: string) => {
-    const [path] = href.split("?");
-    const hasTab = href.includes("?tab=");
-    if (hasTab) {
-      return location === path && window.location.search === `?tab=${href.split("?tab=")[1]}`;
+    const [path, query] = href.split("?");
+    if (query) {
+      const param = query.split("=")[1];
+      return location === path && window.location.search === `?tab=${param}`;
     }
-    return location === path;
+    return location === path && !window.location.search;
   };
 
   const SidebarContent = () => (
@@ -78,7 +75,7 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
       {/* Logo */}
       <div className="h-16 flex items-center px-5 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${rc.bg}`, border: `1px solid ${rc.accent}40` }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: rc.bg, border: `1px solid ${rc.accent}40` }}>
             <Zap className="w-4 h-4" style={{ color: rc.accent }} />
           </div>
           <span className="font-mono font-black text-lg text-white tracking-widest">DISTRIMED</span>
@@ -103,31 +100,21 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
               <div
                 className={cn(
                   "flex items-center gap-3 px-3 py-3 rounded-xl transition-all cursor-pointer relative group",
-                  active
-                    ? "text-white"
-                    : "text-muted-foreground hover:text-white"
+                  active ? "text-white" : "text-muted-foreground hover:text-white"
                 )}
                 style={active ? {
                   background: `${item.color || rc.accent}15`,
                   border: `1px solid ${item.color || rc.accent}30`,
-                } : {
-                  border: "1px solid transparent",
-                }}
+                } : { border: "1px solid transparent" }}
               >
-                {/* Icon with glow background */}
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
                   style={active ? {
                     background: `${item.color || rc.accent}20`,
                     boxShadow: `0 0 12px ${item.color || rc.accent}30`,
-                  } : {
-                    background: "rgba(255,255,255,0.05)",
-                  }}
+                  } : { background: "rgba(255,255,255,0.05)" }}
                 >
-                  <item.icon
-                    className="w-5 h-5 transition-all"
-                    style={{ color: active ? (item.color || rc.accent) : "inherit" }}
-                  />
+                  <item.icon className="w-5 h-5 transition-all" style={{ color: active ? (item.color || rc.accent) : "inherit" }} />
                 </div>
                 <span className="flex-1 font-mono text-xs tracking-wide">{item.label}</span>
                 {(item.badge ?? 0) > 0 && (
@@ -209,9 +196,7 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm lg:text-base font-mono font-bold text-white tracking-widest uppercase">{title}</h1>
-            </div>
+            <h1 className="text-sm lg:text-base font-mono font-bold text-white tracking-widest uppercase">{title}</h1>
           </div>
 
           <div className="flex items-center gap-3">

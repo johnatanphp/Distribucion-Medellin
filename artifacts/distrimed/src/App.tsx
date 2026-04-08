@@ -9,12 +9,19 @@ import { getAuthToken } from "@/lib/auth";
 
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import Login from "@/pages/Login";
-import AdminDashboard from "@/pages/AdminDashboard";
-import StoreDashboard from "@/pages/StoreDashboard";
+
+import CustomerHome from "@/pages/CustomerHome";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import CustomerOrders from "@/pages/CustomerOrders";
 import CustomerWishlist from "@/pages/CustomerWishlist";
 import CustomerCart from "@/pages/CustomerCart";
+
+import AdminHome from "@/pages/AdminHome";
+import AdminDashboard from "@/pages/AdminDashboard";
+
+import StoreHome from "@/pages/StoreHome";
+import StoreDashboard from "@/pages/StoreDashboard";
+
 import ProfilePage from "@/pages/ProfilePage";
 import NotFound from "@/pages/not-found";
 
@@ -45,13 +52,25 @@ function AppRouter() {
 
   return (
     <Switch>
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/store" component={StoreDashboard} />
-      <Route path="/customer" component={CustomerDashboard} />
+      {/* ── CUSTOMER ── */}
+      <Route path="/customer" component={CustomerHome} />
+      <Route path="/customer/catalog" component={CustomerDashboard} />
       <Route path="/customer/orders" component={CustomerOrders} />
       <Route path="/customer/wishlist" component={CustomerWishlist} />
       <Route path="/customer/cart" component={CustomerCart} />
+
+      {/* ── ADMIN ── */}
+      <Route path="/admin" component={AdminHome} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+
+      {/* ── STORE ── */}
+      <Route path="/store" component={StoreHome} />
+      <Route path="/store/dashboard" component={StoreDashboard} />
+
+      {/* ── SHARED ── */}
       <Route path="/profile" component={ProfilePage} />
+
+      {/* ── ROOT REDIRECT BY ROLE ── */}
       <Route path="/">
         {user.role === "superadmin" ? (
           <Redirect to="/admin" />
@@ -61,6 +80,7 @@ function AppRouter() {
           <Redirect to="/customer" />
         )}
       </Route>
+
       <Route component={NotFound} />
     </Switch>
   );

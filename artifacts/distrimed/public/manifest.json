@@ -1,16 +1,16 @@
 {
   "name": "DISTRIMED - Red de Distribución",
   "short_name": "DISTRIMED",
-  "description": "Sistema de gestión de red de distribución para Medellín. Conecta tiendas, productos y clientes.",
+  "description": "Encuentra tiendas de distribución médica cerca de ti en Medellín. Catálogo, mapa GPS y gestión de pedidos.",
   "start_url": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#050810",
   "theme_color": "#00FFCC",
-  "lang": "es",
+  "lang": "es-CO",
   "dir": "ltr",
-  "categories": ["business", "shopping", "productivity"],
+  "categories": ["business", "shopping", "health", "productivity"],
   "scope": "/",
   "id": "/",
   "icons": [
@@ -30,10 +30,17 @@
   "screenshots": [],
   "shortcuts": [
     {
+      "name": "Mapa GPS",
+      "short_name": "Mapa",
+      "description": "Ver tiendas cercanas en el mapa de Medellín",
+      "url": "/customer",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
       "name": "Catálogo",
       "short_name": "Catálogo",
       "description": "Explorar productos del catálogo",
-      "url": "/customer",
+      "url": "/customer/catalog",
       "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
     },
     {
@@ -42,17 +49,8 @@
       "description": "Ver historial de pedidos",
       "url": "/customer/orders",
       "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
-    },
-    {
-      "name": "Mapa",
-      "short_name": "Mapa",
-      "description": "Ver mapa de tiendas",
-      "url": "/customer?tab=map",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
     }
   ],
   "prefer_related_applications": false,
-  "edge_side_panel": {
-    "preferred_width": 480
-  }
+  "permissions": ["geolocation"]
 }

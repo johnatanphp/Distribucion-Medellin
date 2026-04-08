@@ -105,11 +105,15 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 React + Vite PWA frontend. Uses wouter-based routing (modular pages). Vite dev server proxies `/api` → `http://localhost:8080`. CartProvider wraps the app for global cart state.
 
 **Pages (by role):**
-- **Superadmin**: `AdminDashboard` (overview/stores/users tabs, create store/user dialogs, toggle store)
-- **Store owner**: `StoreDashboard` (inventory management, store stats, product CRUD)
-- **Customer**: `CustomerDashboard` (catalog with search/category/price filters + map view), `CustomerOrders` (order history with expandable details), `CustomerWishlist` (localStorage-based saved products), `CustomerCart` (cart management + order placement), `ProfilePage` (edit name)
+- **Superadmin**: `/admin` → `AdminHome` (global stats, sales chart, embedded map), `/admin/dashboard` → `AdminDashboard` (full overview/stores/users tabs, create store/user dialogs, toggle store)
+- **Store owner**: `/store` → `StoreHome` (store card, stock alerts, category chart, map), `/store/dashboard` → `StoreDashboard` (inventory management, store stats, product CRUD)
+- **Customer**: `/customer` → `CustomerHome` (GPS-first full-screen Leaflet map, proximity-sorted stores list, zone filters, Medellín-centered), `/customer/catalog` → `CustomerDashboard` (catalog + filters), `CustomerOrders`, `CustomerWishlist`, `CustomerCart`, `ProfilePage`
 
-**Shared layout**: `DashboardLayout` — responsive sidebar, mobile hamburger, cart badge, role-based nav
+**Map/GPS**: `GeoProvider` context (`src/contexts/GeoContext.tsx`) wraps the full app — geolocation requested on login. `CustomerHome` shows stores sorted by real GPS distance (haversine). Map tiles: CartoDB dark_all via react-leaflet.
+
+**Service worker**: `public/sw.js` — cache named `distrimed-v4`; bump version on each deploy to force cache refresh.
+
+**Shared layout**: `DashboardLayout` — responsive sidebar, mobile hamburger, cart badge, role-based nav (customers see "Inicio · Mapa" first)
 
 **Orders**: Full REST flow — `POST /api/orders` creates order + items + sales records; `GET /api/orders` returns user's history with items
 

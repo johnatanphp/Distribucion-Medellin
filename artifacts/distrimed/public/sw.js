@@ -1,4 +1,4 @@
-const CACHE_NAME = 'distrimed-v3';
+const CACHE_NAME = 'distrimed-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
