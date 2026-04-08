@@ -14,6 +14,10 @@ export const storesTable = pgTable("stores", {
   description: text("description").notNull().default(""),
   imageUrl: text("image_url"),
   totalSales: numeric("total_sales", { precision: 12, scale: 2 }).notNull().default("0"),
+  whatsappPhone: text("whatsapp_phone"),
+  logoUrl: text("logo_url"),
+  website: text("website"),
+  openHours: text("open_hours"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

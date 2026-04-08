@@ -1,14 +1,16 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import {
   LogOut, Package, Store, Users, Activity,
   ShoppingCart, Heart, ClipboardList, User, Menu, X,
-  Map, Zap, BarChart3, Home, LayoutGrid,
+  Map, Zap, BarChart3, Home, LayoutGrid, Bell,
+  Settings, GitBranch, FolderOpen, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
+import { getAuthToken } from "@/lib/auth";
 
 interface NavItem {
   label: string;
@@ -23,6 +25,25 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
   const [location] = useLocation();
   const { count } = useCart();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch("/api/notifications", {
+          headers: { Authorization: `Bearer ${getAuthToken()}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) setUnreadNotifs(data.filter((n: any) => !n.read).length);
+        }
+      } catch {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const getNavItems = (): NavItem[] => {
     switch (user?.role) {
@@ -30,12 +51,19 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
         return [
           { label: "Inicio", icon: Home, href: "/admin", color: "#00FFCC" },
           { label: "Panel Global", icon: BarChart3, href: "/admin/dashboard", color: "#00FFCC" },
+          { label: "Sucursales", icon: GitBranch, href: "/admin/branches", color: "#f97316" },
+          { label: "Documentos", icon: FolderOpen, href: "/admin/documents", color: "#a78bfa" },
+          { label: "Notificaciones", icon: Bell, href: "/notifications", color: "#f59e0b", badge: unreadNotifs },
+          { label: "Configuración", icon: Settings, href: "/admin/settings", color: "#00FFCC" },
           { label: "Mi Perfil", icon: User, href: "/profile", color: "#8b5cf6" },
         ];
       case "store":
         return [
           { label: "Inicio", icon: Home, href: "/store", color: "#f97316" },
           { label: "Panel de Tienda", icon: BarChart3, href: "/store/dashboard", color: "#f97316" },
+          { label: "Sucursales", icon: GitBranch, href: "/store/branches", color: "#f97316" },
+          { label: "Documentos", icon: FolderOpen, href: "/store/documents", color: "#a78bfa" },
+          { label: "Notificaciones", icon: Bell, href: "/notifications", color: "#f59e0b", badge: unreadNotifs },
           { label: "Mi Perfil", icon: User, href: "/profile", color: "#8b5cf6" },
         ];
       case "customer":
@@ -45,6 +73,7 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
           { label: "Mis Pedidos", icon: ClipboardList, href: "/customer/orders", color: "#00FFCC" },
           { label: "Lista de Deseos", icon: Heart, href: "/customer/wishlist", color: "#ec4899" },
           { label: "Carrito", icon: ShoppingCart, href: "/customer/cart", color: "#00FFCC", badge: count },
+          { label: "Notificaciones", icon: Bell, href: "/notifications", color: "#f59e0b", badge: unreadNotifs },
           { label: "Mi Perfil", icon: User, href: "/profile", color: "#8b5cf6" },
         ];
       default:
@@ -215,6 +244,19 @@ export default function DashboardLayout({ children, title }: { children: ReactNo
                 </Button>
               </Link>
             )}
+            <Link href="/notifications">
+              <Button variant="ghost" size="sm" className="relative text-muted-foreground hover:text-white p-2 rounded-lg hover:bg-white/5">
+                <Bell className="w-5 h-5" />
+                {unreadNotifs > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center animate-pulse"
+                    style={{ background: "#f59e0b", color: "#000" }}
+                  >
+                    {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                  </span>
+                )}
+              </Button>
+            </Link>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/5">
               <span className="flex h-2 w-2 relative">
                 <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full opacity-75" style={{ background: rc.accent }} />

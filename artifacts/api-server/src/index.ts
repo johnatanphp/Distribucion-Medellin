@@ -1,7 +1,9 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { db, pool } from "@workspace/db";
-import { usersTable, storesTable, productsTable, salesTable, ratingsTable } from "@workspace/db/schema";
+import { usersTable, storesTable, productsTable, salesTable, ratingsTable, settingsTable } from "@workspace/db/schema";
+import { eq } from "drizzle-orm";
+import { sql as drizzleSql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 const rawPort = process.env["PORT"];
@@ -91,8 +93,100 @@ async function ensureSchema() {
       unit_price numeric(10,2) NOT NULL,
       created_at timestamp NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS branches (
+      id serial PRIMARY KEY,
+      store_id integer NOT NULL,
+      name text NOT NULL,
+      address text NOT NULL,
+      phone text,
+      lat real,
+      lng real,
+      active boolean NOT NULL DEFAULT true,
+      manager_name text,
+      open_hours text DEFAULT 'Lun-Vie 8:00-18:00',
+      notes text,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS documents (
+      id serial PRIMARY KEY,
+      store_id integer,
+      user_id integer,
+      order_id integer,
+      name text NOT NULL,
+      type text NOT NULL DEFAULT 'other',
+      content text,
+      url text,
+      mime_type text DEFAULT 'application/pdf',
+      size integer,
+      tags text,
+      status text NOT NULL DEFAULT 'active',
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS settings (
+      id serial PRIMARY KEY,
+      key text NOT NULL UNIQUE,
+      value text,
+      label text NOT NULL DEFAULT '',
+      category text NOT NULL DEFAULT 'general',
+      description text,
+      input_type text NOT NULL DEFAULT 'text',
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS notifications (
+      id serial PRIMARY KEY,
+      user_id integer,
+      store_id integer,
+      title text NOT NULL,
+      body text NOT NULL,
+      type text NOT NULL DEFAULT 'info',
+      channel text NOT NULL DEFAULT 'in_app',
+      read boolean NOT NULL DEFAULT false,
+      data text,
+      sent_at timestamp NOT NULL DEFAULT now()
+    );
+    ALTER TABLE stores ADD COLUMN IF NOT EXISTS whatsapp_phone text;
+    ALTER TABLE stores ADD COLUMN IF NOT EXISTS logo_url text;
+    ALTER TABLE stores ADD COLUMN IF NOT EXISTS website text;
+    ALTER TABLE stores ADD COLUMN IF NOT EXISTS open_hours text;
   `);
   logger.info("Schema ensured (tables created if missing)");
+}
+
+async function ensureSettings() {
+  const defaults = [
+    { key: "app_name", value: "DISTRIMED", label: "Nombre de la aplicación", category: "general", description: "Nombre que aparece en la app y notificaciones", inputType: "text" },
+    { key: "app_tagline", value: "Sistema de Distribución Médica – Medellín", label: "Slogan", category: "general", description: "Subtítulo mostrado en la pantalla de inicio", inputType: "text" },
+    { key: "contact_email", value: "admin@distri.co", label: "Email de contacto", category: "general", description: "Email principal de soporte", inputType: "email" },
+    { key: "contact_phone", value: "+57 300 123 4567", label: "Teléfono de contacto", category: "general", description: "Teléfono de atención al cliente", inputType: "tel" },
+    { key: "primary_color", value: "#00FFCC", label: "Color primario", category: "appearance", description: "Color de acento principal de la interfaz", inputType: "color" },
+    { key: "secondary_color", value: "#7C3AED", label: "Color secundario", category: "appearance", description: "Color secundario para botones y badges", inputType: "color" },
+    { key: "low_stock_threshold", value: "10", label: "Umbral de bajo stock", category: "inventory", description: "Cantidad mínima para alertas de stock bajo", inputType: "number" },
+    { key: "max_order_items", value: "50", label: "Máx. items por pedido", category: "inventory", description: "Número máximo de productos distintos por pedido", inputType: "number" },
+    { key: "whatsapp_enabled", value: "false", label: "WhatsApp activado", category: "whatsapp", description: "Activar notificaciones vía WhatsApp", inputType: "boolean" },
+    { key: "whatsapp_account_sid", value: "", label: "Twilio Account SID", category: "whatsapp", description: "Account SID de Twilio para WhatsApp", inputType: "password" },
+    { key: "whatsapp_auth_token", value: "", label: "Twilio Auth Token", category: "whatsapp", description: "Auth Token de Twilio para WhatsApp", inputType: "password" },
+    { key: "whatsapp_from", value: "whatsapp:+14155238886", label: "Número WhatsApp origen", category: "whatsapp", description: "Número de WhatsApp Business (sandbox o propio)", inputType: "text" },
+    { key: "whatsapp_webhook_url", value: "", label: "URL Webhook", category: "whatsapp", description: "URL pública para recibir mensajes entrantes de WhatsApp", inputType: "url" },
+    { key: "notifications_enabled", value: "true", label: "Notificaciones activadas", category: "notifications", description: "Activar sistema de notificaciones en la app", inputType: "boolean" },
+    { key: "order_notification_admin", value: "true", label: "Notificar admin en pedidos", category: "notifications", description: "Enviar notificación al admin cuando hay un nuevo pedido", inputType: "boolean" },
+    { key: "currency", value: "COP", label: "Moneda", category: "general", description: "Moneda del sistema (ISO 4217)", inputType: "text" },
+    { key: "timezone", value: "America/Bogota", label: "Zona horaria", category: "general", description: "Zona horaria del servidor", inputType: "text" },
+    { key: "maps_provider", value: "openstreetmap", label: "Proveedor de mapas", category: "general", description: "Proveedor de mapas para la app", inputType: "text" },
+    { key: "google_maps_key", value: "", label: "Google Maps API Key", category: "general", description: "Clave de API de Google Maps (opcional)", inputType: "password" },
+    { key: "deploy_url", value: "", label: "URL de producción", category: "deployment", description: "URL pública del despliegue en producción", inputType: "url" },
+    { key: "maintenance_mode", value: "false", label: "Modo mantenimiento", category: "deployment", description: "Mostrar mensaje de mantenimiento a usuarios", inputType: "boolean" },
+    { key: "max_stores", value: "50", label: "Máx. tiendas activas", category: "deployment", description: "Límite de tiendas activas en el sistema", inputType: "number" },
+  ];
+
+  for (const s of defaults) {
+    await pool.query(
+      `INSERT INTO settings (key, value, label, category, description, input_type, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,now())
+       ON CONFLICT (key) DO NOTHING`,
+      [s.key, s.value, s.label, s.category, s.description, s.inputType]
+    );
+  }
+  logger.info("Settings ensured (defaults inserted if missing)");
 }
 
 async function autoSeedIfEmpty() {
@@ -171,6 +265,7 @@ async function autoSeedIfEmpty() {
 }
 
 ensureSchema()
+  .then(() => ensureSettings())
   .then(() => autoSeedIfEmpty())
   .then(() => {
     app.listen(port, (err) => {

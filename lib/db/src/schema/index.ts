@@ -4,3 +4,7 @@ export * from "./products";
 export * from "./ratings";
 export * from "./sales";
 export * from "./orders";
+export * from "./branches";
+export * from "./documents";
+export * from "./settings";
+export * from "./notifications";

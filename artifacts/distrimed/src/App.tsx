@@ -18,9 +18,14 @@ import CustomerCart from "@/pages/CustomerCart";
 
 import AdminHome from "@/pages/AdminHome";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminSettings from "@/pages/AdminSettings";
 
 import StoreHome from "@/pages/StoreHome";
 import StoreDashboard from "@/pages/StoreDashboard";
+
+import BranchManager from "@/pages/BranchManager";
+import DocumentCenter from "@/pages/DocumentCenter";
+import NotificationCenter from "@/pages/NotificationCenter";
 
 import ProfilePage from "@/pages/ProfilePage";
 import NotFound from "@/pages/not-found";
@@ -62,12 +67,18 @@ function AppRouter() {
       {/* ── ADMIN ── */}
       <Route path="/admin" component={AdminHome} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/branches" component={BranchManager} />
+      <Route path="/admin/documents" component={DocumentCenter} />
 
       {/* ── STORE ── */}
       <Route path="/store" component={StoreHome} />
       <Route path="/store/dashboard" component={StoreDashboard} />
+      <Route path="/store/branches" component={BranchManager} />
+      <Route path="/store/documents" component={DocumentCenter} />
 
       {/* ── SHARED ── */}
+      <Route path="/notifications" component={NotificationCenter} />
       <Route path="/profile" component={ProfilePage} />
 
       {/* ── ROOT REDIRECT BY ROLE ── */}
