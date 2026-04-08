@@ -44,27 +44,25 @@ function AppRouter() {
   }
 
   return (
-    <GeoProvider>
-      <Switch>
-        <Route path="/admin" component={AdminDashboard} />
-        <Route path="/store" component={StoreDashboard} />
-        <Route path="/customer" component={CustomerDashboard} />
-        <Route path="/customer/orders" component={CustomerOrders} />
-        <Route path="/customer/wishlist" component={CustomerWishlist} />
-        <Route path="/customer/cart" component={CustomerCart} />
-        <Route path="/profile" component={ProfilePage} />
-        <Route path="/">
-          {user.role === "superadmin" ? (
-            <Redirect to="/admin" />
-          ) : user.role === "store" ? (
-            <Redirect to="/store" />
-          ) : (
-            <Redirect to="/customer" />
-          )}
-        </Route>
-        <Route component={NotFound} />
-      </Switch>
-    </GeoProvider>
+    <Switch>
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/store" component={StoreDashboard} />
+      <Route path="/customer" component={CustomerDashboard} />
+      <Route path="/customer/orders" component={CustomerOrders} />
+      <Route path="/customer/wishlist" component={CustomerWishlist} />
+      <Route path="/customer/cart" component={CustomerCart} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/">
+        {user.role === "superadmin" ? (
+          <Redirect to="/admin" />
+        ) : user.role === "store" ? (
+          <Redirect to="/store" />
+        ) : (
+          <Redirect to="/customer" />
+        )}
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
@@ -72,11 +70,13 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CartProvider>
-          <AppRouter />
-          <Toaster />
-          <PWAInstallBanner />
-        </CartProvider>
+        <GeoProvider>
+          <CartProvider>
+            <AppRouter />
+            <Toaster />
+            <PWAInstallBanner />
+          </CartProvider>
+        </GeoProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
