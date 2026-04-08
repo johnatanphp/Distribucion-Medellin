@@ -109,11 +109,13 @@ React + Vite PWA frontend. Uses wouter-based routing (modular pages). Vite dev s
 - **Store owner**: `/store` → `StoreHome` (store card, stock alerts, category chart, map), `/store/dashboard` → `StoreDashboard` (inventory management, store stats, product CRUD)
 - **Customer**: `/customer` → `CustomerHome` (GPS-first full-screen Leaflet map, proximity-sorted stores list, zone filters, Medellín-centered), `/customer/catalog` → `CustomerDashboard` (catalog + filters), `CustomerOrders`, `CustomerWishlist`, `CustomerCart`, `ProfilePage`
 
-**Map/GPS**: `GeoProvider` context (`src/contexts/GeoContext.tsx`) wraps the full app — geolocation requested on login. `CustomerHome` shows stores sorted by real GPS distance (haversine). Map tiles: CartoDB dark_all via react-leaflet.
+**Map/GPS**: `GeoProvider` context (`src/contexts/GeoContext.tsx`) wraps the full app — geolocation requested on login. `CustomerHome` shows stores sorted by real GPS distance (haversine). Map tiles: CartoDB Voyager (light style) via react-leaflet.
 
 **Service worker**: `public/sw.js` — cache named `distrimed-v4`; bump version on each deploy to force cache refresh.
 
-**Shared layout**: `DashboardLayout` — responsive sidebar, mobile hamburger, cart badge, role-based nav (customers see "Inicio · Mapa" first)
+**Shared layout**: `DashboardLayout` — responsive sidebar, mobile hamburger, cart badge, role-based nav (customers see "Inicio · Mapa" first). Uses CSS variables (`hsl(var(--*))`) for full light/dark theme support.
+
+**Theme**: Pharmaceutical light theme (default). Primary: teal `hsl(194 80% 38%)`. CSS custom properties in `index.css`. Login page has split-panel layout (teal gradient left / white form right). All hardcoded dark colors replaced with semantic CSS variables.
 
 **Orders**: Full REST flow — `POST /api/orders` creates order + items + sales records; `GET /api/orders` returns user's history with items
 
