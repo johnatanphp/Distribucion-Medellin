@@ -189,6 +189,23 @@ async function ensureSettings() {
   logger.info("Settings ensured (defaults inserted if missing)");
 }
 
+async function ensureExtraStores() {
+  const extraStores = [
+    { name: "Distribuidora Laureles", address: "Cra. 76 #33-57, Laureles, Medellín", phone: "3154445566", email: "laureles@distri.co", lat: 6.2495, lng: -75.5952, active: true, description: "Nodo de distribución en el sector de Laureles-Estadio, cobertura occidente." },
+    { name: "Distribuidora Belén", address: "Cra. 80 #30A-12, Belén, Medellín", phone: "3163337788", email: "belen@distri.co", lat: 6.2305, lng: -75.6070, active: true, description: "Sucursal sur-occidente, cubre Belén y La América con distribución rápida." },
+    { name: "Distribuidora Envigado", address: "Calle 40 Sur #45-20, Envigado", phone: "3112228899", email: "envigado@distri.co", lat: 6.1741, lng: -75.5908, active: true, description: "Nodo Envigado — cobertura sur del área metropolitana y municipios vecinos." },
+  ];
+  for (const s of extraStores) {
+    await pool.query(
+      `INSERT INTO stores (name, address, phone, email, lat, lng, active, description, total_sales, created_at)
+       SELECT $1,$2,$3,$4,$5,$6,$7,$8,0,now()
+       WHERE NOT EXISTS (SELECT 1 FROM stores WHERE email=$4)`,
+      [s.name, s.address, s.phone, s.email, s.lat, s.lng, s.active, s.description]
+    );
+  }
+  logger.info("Extra stores ensured (Laureles, Belén, Envigado)");
+}
+
 async function autoSeedIfEmpty() {
   try {
     const existing = await db.select({ id: usersTable.id }).from(usersTable).limit(1);
@@ -196,10 +213,13 @@ async function autoSeedIfEmpty() {
 
     logger.info("Database is empty — running initial seed...");
 
-    const [store1, store2] = await db.insert(storesTable).values([
-      { name: "Distribuidora Norte", address: "Calle 80 #45-10, Medellín", phone: "3001234567", email: "norte@distri.co", lat: 6.2907, lng: -75.5748, active: true, description: "Sucursal norte de la ciudad, especializada en productos farmacéuticos y de consumo masivo." },
-      { name: "Distribuidora Poblado", address: "El Poblado #10-30, Medellín", phone: "3007654321", email: "poblado@distri.co", lat: 6.2099, lng: -75.5680, active: true, description: "Sucursal premium en El Poblado con los mejores productos importados." },
-      { name: "Distribuidora Centro", address: "Carrera 52 #48-31, Medellín", phone: "3009876543", email: "centro@distri.co", lat: 6.2518, lng: -75.5636, active: false, description: "Sucursal céntrica. Temporalmente suspendida por renovación." },
+    const [store1, store2, , , , ] = await db.insert(storesTable).values([
+      { name: "Distribuidora Norte", address: "Calle 80 #45-10, Aranjuez, Medellín", phone: "3001234567", email: "norte@distri.co", lat: 6.2907, lng: -75.5748, active: true, description: "Sucursal norte de la ciudad, especializada en productos farmacéuticos y de consumo masivo." },
+      { name: "Distribuidora Poblado", address: "Av. El Poblado #10-30, Medellín", phone: "3007654321", email: "poblado@distri.co", lat: 6.2099, lng: -75.5680, active: true, description: "Sucursal premium en El Poblado con los mejores productos importados." },
+      { name: "Distribuidora Centro", address: "Carrera 52 #48-31, La Candelaria, Medellín", phone: "3009876543", email: "centro@distri.co", lat: 6.2518, lng: -75.5636, active: false, description: "Sucursal céntrica. Temporalmente suspendida por renovación." },
+      { name: "Distribuidora Laureles", address: "Cra. 76 #33-57, Laureles, Medellín", phone: "3154445566", email: "laureles@distri.co", lat: 6.2495, lng: -75.5952, active: true, description: "Nodo de distribución en el sector de Laureles-Estadio, cobertura occidente." },
+      { name: "Distribuidora Belén", address: "Cra. 80 #30A-12, Belén, Medellín", phone: "3163337788", email: "belen@distri.co", lat: 6.2305, lng: -75.6070, active: true, description: "Sucursal sur-occidente, cubre Belén y La América con distribución rápida." },
+      { name: "Distribuidora Envigado", address: "Calle 40 Sur #45-20, Envigado", phone: "3112228899", email: "envigado@distri.co", lat: 6.1741, lng: -75.5908, active: true, description: "Nodo Envigado — cobertura sur del área metropolitana y municipios vecinos." },
     ]).returning();
 
     const [adminHash, tiendaHash, passHash] = await Promise.all([
@@ -267,6 +287,7 @@ async function autoSeedIfEmpty() {
 ensureSchema()
   .then(() => ensureSettings())
   .then(() => autoSeedIfEmpty())
+  .then(() => ensureExtraStores())
   .then(() => {
     app.listen(port, (err) => {
       if (err) {
