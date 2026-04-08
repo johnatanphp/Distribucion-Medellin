@@ -17,13 +17,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import {
   Search, MapPin, Star, Package, ShoppingCart, Heart, Map, LayoutGrid,
-  Phone, Store, Navigation, Layers, Filter, X, SlidersHorizontal
+  Store, SlidersHorizontal, X, Footprints, Navigation
 } from "lucide-react";
 import StoreMapWidget from "@/components/StoreMapWidget";
+import WalkingModeOverlay from "@/components/WalkingModeOverlay";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { addToWishlist, removeFromWishlist, isInWishlist } from "./CustomerWishlist";
+import { useGeo } from "@/contexts/GeoContext";
 import { cn } from "@/lib/utils";
 
 const PRICE_MAX_DEFAULT = 200000;
@@ -32,16 +34,17 @@ export default function CustomerDashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { addItem } = useCart();
+  const { status: geoStatus, setWalkingMode } = useGeo();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [view, setView] = useState<"catalog" | "map">("map");
-  const [selectedStore, setSelectedStore] = useState<any | null>(null);
   const [showCatalogFilters, setShowCatalogFilters] = useState(true);
+  const [walkingOverlay, setWalkingOverlay] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useGetProducts({ maxPrice });
-  const { data: stores, isLoading: storesLoading } = useGetStores();
+  const { data: stores } = useGetStores();
 
   const createRating = useCreateRating({
     mutation: {
@@ -65,20 +68,31 @@ export default function CustomerDashboard() {
 
   const hasActiveFilters = searchTerm || selectedCategory !== "all" || maxPrice !== undefined;
 
+  const handleOpenWalkingMode = () => {
+    setWalkingMode(true);
+    setWalkingOverlay(true);
+  };
+
+  const handleCloseWalkingMode = () => {
+    setWalkingMode(false);
+    setWalkingOverlay(false);
+  };
+
   return (
     <DashboardLayout title={view === "map" ? "Mapa de Tiendas" : "Catálogo"}>
+      {walkingOverlay && <WalkingModeOverlay onClose={handleCloseWalkingMode} />}
+
       <div className="space-y-4">
-        {/* Tab switcher */}
-        <div className="flex items-center gap-2">
+        {/* Tab switcher + Walking Mode button */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setView("catalog")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs uppercase tracking-wider border transition-all",
               view === "catalog"
-                ? "text-black font-bold border-transparent"
-                : "text-muted-foreground border-white/10 hover:text-white hover:border-white/20"
+                ? "text-primary-foreground border-transparent bg-primary"
+                : "text-muted-foreground border-border hover:text-foreground hover:border-border/60"
             )}
-            style={view === "catalog" ? { background: "#00FFCC" } : {}}
           >
             <LayoutGrid className="w-4 h-4" /> Catálogo
           </button>
@@ -87,29 +101,48 @@ export default function CustomerDashboard() {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs uppercase tracking-wider border transition-all",
               view === "map"
-                ? "text-black font-bold border-transparent"
-                : "text-muted-foreground border-white/10 hover:text-white hover:border-white/20"
+                ? "text-primary-foreground border-transparent bg-primary"
+                : "text-muted-foreground border-border hover:text-foreground hover:border-border/60"
             )}
-            style={view === "map" ? { background: "#00FFCC" } : {}}
           >
             <Map className="w-4 h-4" /> Mapa
+          </button>
+
+          {/* Walking Mode CTA */}
+          <button
+            onClick={handleOpenWalkingMode}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs uppercase tracking-wider border transition-all",
+              "ml-1 walking-pulse"
+            )}
+            style={{
+              background: geoStatus === "granted" ? "hsl(162 60% 40% / 0.12)" : "hsl(var(--muted))",
+              border: `1px solid ${geoStatus === "granted" ? "hsl(162 60% 40% / 0.35)" : "hsl(var(--border))"}`,
+              color: geoStatus === "granted" ? "#16a34a" : "hsl(var(--muted-foreground))",
+            }}
+          >
+            <Footprints className="w-4 h-4" />
+            Modo Caminata
+            {geoStatus === "granted" && (
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 live-dot" />
+            )}
           </button>
 
           {view === "catalog" && (
             <>
               <button
                 onClick={() => setShowCatalogFilters(v => !v)}
-                className="flex items-center gap-1.5 ml-2 px-3 py-2 rounded-xl text-xs font-mono uppercase tracking-wide transition-all flex-shrink-0"
+                className="flex items-center gap-1.5 ml-auto px-3 py-2 rounded-xl text-xs font-mono uppercase tracking-wide transition-all border"
                 style={{
-                  background: hasActiveFilters ? "rgba(0,255,204,0.12)" : "rgba(255,255,255,0.05)",
-                  border: `1px solid ${hasActiveFilters ? "rgba(0,255,204,0.4)" : "rgba(255,255,255,0.1)"}`,
-                  color: hasActiveFilters ? "#00FFCC" : "#aaa",
+                  background: hasActiveFilters ? "hsl(var(--primary) / 0.10)" : "hsl(var(--muted))",
+                  border: `1px solid ${hasActiveFilters ? "hsl(var(--primary) / 0.35)" : "hsl(var(--border))"}`,
+                  color: hasActiveFilters ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
                 }}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 {hasActiveFilters ? "Filtros activos" : "Filtros"}
               </button>
-              <span className="ml-auto text-[10px] font-mono text-muted-foreground">
+              <span className="text-[10px] font-mono text-muted-foreground">
                 {filteredProducts?.length ?? 0} productos
               </span>
             </>
@@ -123,36 +156,34 @@ export default function CustomerDashboard() {
 
         {/* ── MAP VIEW ── */}
         {view === "map" && (
-          <StoreMapWidget height="560px" showWidgets />
+          <StoreMapWidget height="540px" showWidgets />
         )}
 
         {/* ── CATALOG VIEW ── */}
         {view === "catalog" && (
           <>
-            {/* Filters Panel */}
             {showCatalogFilters && (
               <div
                 className="rounded-2xl p-4 space-y-4"
-                style={{ background: "rgba(10,14,26,0.85)", border: "1px solid rgba(255,255,255,0.07)" }}
+                style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
               >
-                {/* Row 1: search + category */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-primary/60" />
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Buscar producto, categoría o tienda..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10 focus:border-primary/40 text-white font-mono h-11 rounded-xl"
+                      className="pl-10 bg-background border-border focus:border-primary/50 h-11 rounded-xl font-mono text-sm"
                     />
                   </div>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="w-full sm:w-48 bg-white/5 border-white/10 text-white font-mono h-11 text-xs uppercase rounded-xl">
+                    <SelectTrigger className="w-full sm:w-52 bg-background border-border h-11 rounded-xl font-mono text-xs uppercase">
                       <SelectValue placeholder="Categoría" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0a0e1a] border-white/10">
+                    <SelectContent>
                       {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat} className="font-mono text-xs uppercase text-white focus:bg-primary/20 focus:text-primary">
+                        <SelectItem key={cat} value={cat} className="font-mono text-xs uppercase">
                           {cat === "all" ? "Todas las categorías" : cat}
                         </SelectItem>
                       ))}
@@ -160,14 +191,13 @@ export default function CustomerDashboard() {
                   </Select>
                 </div>
 
-                {/* Row 2: price range */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                       Precio máximo
                     </label>
-                    <span className="font-mono text-xs font-bold" style={{ color: "#00FFCC" }}>
-                      {maxPrice !== undefined ? `$${maxPrice.toLocaleString("es-CO")}` : "Sin límite"}
+                    <span className="font-mono text-xs font-bold text-primary">
+                      {maxPrice !== undefined ? `$${maxPrice.toLocaleString("es-CO")} COP` : "Sin límite"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -179,25 +209,21 @@ export default function CustomerDashboard() {
                       onValueChange={([v]) => setMaxPrice(v >= PRICE_MAX_DEFAULT ? undefined : v)}
                       className="flex-1"
                     />
-                    <div className="relative w-28">
-                      <span className="absolute left-3 top-2.5 text-primary/60 font-mono text-xs">$</span>
-                      <Input
-                        type="number"
-                        placeholder="Libre"
-                        value={maxPrice || ""}
-                        onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : undefined)}
-                        className="pl-7 bg-white/5 border-white/10 focus:border-primary/40 text-white font-mono h-9 rounded-xl text-xs"
-                      />
-                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Libre"
+                      value={maxPrice || ""}
+                      onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-28 bg-background border-border h-9 rounded-xl font-mono text-xs"
+                    />
                   </div>
                 </div>
 
-                {/* Clear filters */}
                 {hasActiveFilters && (
                   <div className="flex justify-end">
                     <button
                       onClick={() => { setSearchTerm(""); setSelectedCategory("all"); setMaxPrice(undefined); }}
-                      className="flex items-center gap-1 text-[10px] font-mono text-red-400 hover:text-red-300 border border-red-400/20 hover:bg-red-400/10 px-3 py-1 rounded-lg transition-all"
+                      className="flex items-center gap-1 text-[10px] font-mono text-destructive hover:text-destructive/80 border border-destructive/20 hover:bg-destructive/5 px-3 py-1 rounded-lg transition-all"
                     >
                       <X className="w-3 h-3" /> Limpiar filtros
                     </button>
@@ -206,11 +232,10 @@ export default function CustomerDashboard() {
               </div>
             )}
 
-            {/* Products grid */}
             {productsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                  <Skeleton key={i} className="h-[300px] w-full rounded-2xl bg-white/5" />
+                  <Skeleton key={i} className="h-[300px] w-full rounded-2xl" />
                 ))}
               </div>
             ) : (
@@ -238,8 +263,8 @@ export default function CustomerDashboard() {
                   />
                 ))}
                 {(!filteredProducts || filteredProducts.length === 0) && (
-                  <div className="col-span-full py-20 text-center rounded-2xl border border-dashed border-white/10">
-                    <Package className="w-16 h-16 text-muted-foreground opacity-20 mx-auto mb-4" />
+                  <div className="col-span-full py-20 text-center rounded-2xl border border-dashed border-border">
+                    <Package className="w-16 h-16 text-muted-foreground/25 mx-auto mb-4" />
                     <p className="font-mono text-muted-foreground text-sm">Sin resultados para tu búsqueda</p>
                     <Button
                       variant="ghost"
@@ -296,59 +321,77 @@ function ProductCard({
     }
   };
 
-  const stockColor = product.stock > 10 ? "#22c55e" : product.stock > 0 ? "#eab308" : "#ef4444";
+  const stockColor = product.stock > 10 ? "#16a34a" : product.stock > 0 ? "#d97706" : "#ef4444";
 
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col group transition-all hover:scale-[1.01]"
-      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+      className="rounded-2xl overflow-hidden flex flex-col group transition-all hover:shadow-md hover:-translate-y-0.5"
+      style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
     >
-      <div className="h-40 relative overflow-hidden" style={{ background: "rgba(0,0,0,0.4)" }}>
+      <div className="h-36 relative overflow-hidden bg-muted/40">
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Package className="w-14 h-14 text-white/10" />
+            <Package className="w-12 h-12 text-muted-foreground/20" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,14,26,0.8) 0%, transparent 60%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, hsl(var(--card)) 0%, transparent 50%)" }} />
         <div className="absolute top-2 left-2">
-          <span className="px-2 py-0.5 rounded-md font-mono text-[9px] uppercase font-bold" style={{ background: "rgba(0,255,204,0.2)", color: "#00FFCC", border: "1px solid rgba(0,255,204,0.3)" }}>
+          <span
+            className="px-2 py-0.5 rounded-md font-mono text-[9px] uppercase font-bold"
+            style={{
+              background: "hsl(var(--primary) / 0.12)",
+              color: "hsl(var(--primary))",
+              border: "1px solid hsl(var(--primary) / 0.25)"
+            }}
+          >
             {product.category}
           </span>
         </div>
         <button
           onClick={handleWishlist}
           className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110"
-          style={{ background: wishlisted ? "rgba(236,72,153,0.2)" : "rgba(0,0,0,0.5)", border: wishlisted ? "1px solid rgba(236,72,153,0.4)" : "1px solid rgba(255,255,255,0.1)" }}
+          style={{
+            background: wishlisted ? "#fce7f320" : "hsl(var(--card) / 0.80)",
+            border: wishlisted ? "1px solid #ec489980" : "1px solid hsl(var(--border))",
+            backdropFilter: "blur(4px)",
+          }}
         >
           <Heart
             className="w-3.5 h-3.5"
-            style={{ color: wishlisted ? "#ec4899" : "rgba(255,255,255,0.5)", fill: wishlisted ? "#ec4899" : "none" }}
+            style={{ color: wishlisted ? "#ec4899" : "hsl(var(--muted-foreground))", fill: wishlisted ? "#ec4899" : "none" }}
           />
         </button>
         <div className="absolute bottom-2 right-2">
-          <span className="font-mono font-black text-sm" style={{ color: "#00FFCC", textShadow: "0 0 8px rgba(0,255,204,0.5)" }}>
+          <span className="font-mono font-black text-sm text-primary drop-shadow-sm">
             ${product.price?.toLocaleString("es-CO")}
           </span>
         </div>
       </div>
 
       <div className="p-4 flex-1 flex flex-col">
-        <h4 className="font-mono text-sm font-bold text-white leading-snug mb-0.5 line-clamp-2">{product.name}</h4>
+        <h4 className="font-mono text-sm font-bold text-foreground leading-snug mb-0.5 line-clamp-2">{product.name}</h4>
         <p className="font-mono text-[10px] text-muted-foreground mb-1 flex items-center gap-1">
           <Store className="w-2.5 h-2.5 flex-shrink-0" />{product.storeName}
         </p>
-        <p className="text-xs text-muted-foreground/70 font-mono line-clamp-2 flex-1 mb-3">{product.description}</p>
+        <p className="text-xs text-muted-foreground font-mono line-clamp-2 flex-1 mb-3">{product.description}</p>
 
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {[1,2,3,4,5].map(s => (
-              <Star key={s} className="w-3 h-3" style={{ color: s <= Math.round(product.avgRating || 0) ? "#eab308" : "rgba(255,255,255,0.15)", fill: s <= Math.round(product.avgRating || 0) ? "#eab308" : "none" }} />
+              <Star
+                key={s}
+                className="w-3 h-3"
+                style={{
+                  color: s <= Math.round(product.avgRating || 0) ? "#f59e0b" : "hsl(var(--muted-foreground) / 0.3)",
+                  fill: s <= Math.round(product.avgRating || 0) ? "#f59e0b" : "none"
+                }}
+              />
             ))}
             <span className="font-mono text-[10px] text-muted-foreground ml-1">({product.totalRatings ?? 0})</span>
           </div>
@@ -362,8 +405,7 @@ function ProductCard({
             size="sm"
             onClick={onAddToCart}
             disabled={product.stock === 0}
-            className="flex-1 font-mono text-xs uppercase rounded-xl h-9 transition-all"
-            style={{ background: "rgba(0,255,204,0.1)", color: "#00FFCC", border: "1px solid rgba(0,255,204,0.3)" }}
+            className="flex-1 font-mono text-xs uppercase rounded-xl h-9 transition-all bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Agregar
           </Button>
@@ -371,13 +413,13 @@ function ProductCard({
             <DialogTrigger asChild>
               <Button
                 size="sm"
-                variant="ghost"
-                className="font-mono text-xs h-9 w-9 p-0 rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5"
+                variant="outline"
+                className="font-mono text-xs h-9 w-9 p-0 rounded-xl"
               >
-                <Star className="w-3.5 h-3.5 text-yellow-500" />
+                <Star className="w-3.5 h-3.5 text-amber-500" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[380px] bg-[#0a0e1a] border-white/10 text-white rounded-2xl">
+            <DialogContent className="sm:max-w-[380px]">
               <DialogHeader>
                 <DialogTitle className="font-mono text-primary text-sm uppercase">Valorar Producto</DialogTitle>
               </DialogHeader>
@@ -388,7 +430,10 @@ function ProductCard({
                     <button type="button" key={star} onClick={() => setRating(star)}>
                       <Star
                         className="w-9 h-9 hover:scale-110 transition-transform"
-                        style={{ color: star <= rating ? "#eab308" : "rgba(255,255,255,0.2)", fill: star <= rating ? "#eab308" : "none" }}
+                        style={{
+                          color: star <= rating ? "#f59e0b" : "hsl(var(--muted-foreground) / 0.3)",
+                          fill: star <= rating ? "#f59e0b" : "none"
+                        }}
                       />
                     </button>
                   ))}
@@ -396,16 +441,11 @@ function ProductCard({
                 <Textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="bg-white/5 border-white/10 font-mono text-white resize-none rounded-xl"
+                  className="resize-none"
                   placeholder="Comentario opcional..."
                   rows={3}
                 />
-                <Button
-                  type="submit"
-                  disabled={isRating}
-                  className="w-full font-mono text-xs uppercase rounded-xl"
-                  style={{ background: "rgba(0,255,204,0.1)", color: "#00FFCC", border: "1px solid rgba(0,255,204,0.3)" }}
-                >
+                <Button type="submit" disabled={isRating} className="w-full font-mono text-xs uppercase">
                   Enviar Valoración
                 </Button>
               </form>

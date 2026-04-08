@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -67,142 +67,150 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ────────────────────────────────────────────────────────────
+   LIGHT MODE — Pharmaceutical Clean Blue & White
+   ──────────────────────────────────────────────────────────── */
 :root {
-  --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(0, 153, 184, 0.04);
-  --elevate-2: rgba(0, 153, 184, 0.09);
+  --opaque-button-border-intensity: 8;
+  --elevate-1: rgba(0, 157, 197, 0.05);
+  --elevate-2: rgba(0, 157, 197, 0.10);
 
-  /* LIGHT MODE — fondos crema/aqua */
-  --background: 36 30% 95%;
-  --foreground: 220 30% 14%;
+  --background: 210 30% 97%;
+  --foreground: 215 35% 15%;
 
-  --border: 35 18% 82%;
+  --border: 210 20% 88%;
   --card: 0 0% 100%;
-  --card-foreground: 220 30% 14%;
-  --card-border: 192 100% 36% / 0.15;
+  --card-foreground: 215 35% 15%;
+  --card-border: 194 80% 40% / 0.12;
 
-  --sidebar: 36 25% 92%;
-  --sidebar-foreground: 220 30% 14%;
-  --sidebar-border: 192 100% 36% / 0.15;
-  --sidebar-primary: 192 100% 36%;
+  --sidebar: 210 25% 94%;
+  --sidebar-foreground: 215 35% 18%;
+  --sidebar-border: 194 80% 40% / 0.15;
+  --sidebar-primary: 194 80% 38%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 36 20% 86%;
-  --sidebar-accent-foreground: 220 30% 14%;
-  --sidebar-ring: 192 100% 36%;
+  --sidebar-accent: 210 20% 90%;
+  --sidebar-accent-foreground: 215 35% 18%;
+  --sidebar-ring: 194 80% 38%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 220 30% 14%;
-  --popover-border: 192 100% 36% / 0.15;
+  --popover-foreground: 215 35% 15%;
+  --popover-border: 194 80% 40% / 0.15;
 
-  /* Primary Accent: Cyan/Aqua */
-  --primary: 192 100% 36%;
+  /* Primary: Medical Teal-Blue */
+  --primary: 194 80% 38%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 260 60% 55%;
+  --secondary: 258 65% 58%;
   --secondary-foreground: 0 0% 100%;
 
-  --muted: 36 18% 88%;
-  --muted-foreground: 220 15% 50%;
+  --muted: 210 20% 92%;
+  --muted-foreground: 215 15% 52%;
 
-  --accent: 192 100% 36% / 0.1;
-  --accent-foreground: 192 100% 30%;
+  --accent: 194 80% 38% / 0.08;
+  --accent-foreground: 194 80% 32%;
 
-  --destructive: 349 75% 44%;
+  --destructive: 4 80% 52%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 192 100% 36% / 0.15;
-  --ring: 192 100% 36%;
+  --input: 210 20% 92%;
+  --ring: 194 80% 38%;
 
-  --chart-1: 192 100% 36%;
-  --chart-2: 260 60% 55%;
-  --chart-3: 190 100% 45%;
-  --chart-4: 320 80% 55%;
-  --chart-5: 38 90% 45%;
+  --chart-1: 194 80% 38%;
+  --chart-2: 258 65% 58%;
+  --chart-3: 162 60% 40%;
+  --chart-4: 25 85% 52%;
+  --chart-5: 340 75% 52%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: 'Share Tech Mono', monospace;
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
-  --shadow-2xs: 0px 1px 4px 0px rgba(0, 0, 0, 0.06);
-  --shadow-xs: 0px 1px 8px 0px rgba(0, 0, 0, 0.08);
-  --shadow-sm: 0px 2px 12px 0px rgba(0, 0, 0, 0.1);
-  --shadow: 0px 2px 16px 0px rgba(0, 0, 0, 0.12);
-  --shadow-md: 0px 4px 20px 0px rgba(0, 0, 0, 0.14);
-  --shadow-lg: 0px 6px 24px 0px rgba(0, 0, 0, 0.16);
-  --shadow-xl: 0px 8px 32px 0px rgba(0, 0, 0, 0.18);
-  --shadow-2xl: 0px 12px 40px 0px rgba(0, 0, 0, 0.22);
+  --shadow-2xs: 0px 1px 3px 0px rgba(0,0,0,0.05), 0px 1px 2px -1px rgba(0,0,0,0.04);
+  --shadow-xs: 0px 1px 5px 0px rgba(0,0,0,0.07), 0px 1px 3px -1px rgba(0,0,0,0.05);
+  --shadow-sm: 0px 2px 8px 0px rgba(0,0,0,0.08), 0px 1px 4px -1px rgba(0,0,0,0.06);
+  --shadow: 0px 3px 14px 0px rgba(0,0,0,0.10), 0px 1px 6px -1px rgba(0,0,0,0.06);
+  --shadow-md: 0px 4px 18px 0px rgba(0,0,0,0.12), 0px 2px 8px -2px rgba(0,0,0,0.08);
+  --shadow-lg: 0px 6px 24px 0px rgba(0,0,0,0.14), 0px 3px 10px -3px rgba(0,0,0,0.08);
+  --shadow-xl: 0px 10px 32px 0px rgba(0,0,0,0.16), 0px 4px 14px -4px rgba(0,0,0,0.08);
+  --shadow-2xl: 0px 16px 48px 0px rgba(0,0,0,0.20);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l - 8) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l - 5) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l - 8) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l - 8) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l - 6) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l - 6) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l - 8) / alpha);
 }
 
+/* ────────────────────────────────────────────────────────────
+   DARK MODE — Deep Pharmaceutical Navy
+   ──────────────────────────────────────────────────────────── */
 .dark {
-  --elevate-1: rgba(0, 229, 255, 0.04);
-  --elevate-2: rgba(0, 229, 255, 0.09);
+  --elevate-1: rgba(0, 200, 220, 0.05);
+  --elevate-2: rgba(0, 200, 220, 0.10);
 
-  --background: 226 45% 7%;
-  --foreground: 180 5% 90%;
+  --background: 220 30% 9%;
+  --foreground: 200 12% 92%;
 
-  --border: 226 30% 15%;
-  --card: 226 45% 9%;
-  --card-foreground: 180 5% 90%;
-  --card-border: 168 100% 40% / 0.2;
+  --border: 220 22% 18%;
+  --card: 220 28% 11%;
+  --card-foreground: 200 12% 92%;
+  --card-border: 186 85% 46% / 0.18;
 
-  --sidebar: 226 45% 7%;
-  --sidebar-foreground: 180 5% 90%;
-  --sidebar-border: 168 100% 40% / 0.2;
-  --sidebar-primary: 168 100% 40%;
-  --sidebar-primary-foreground: 226 45% 7%;
-  --sidebar-accent: 226 45% 15%;
-  --sidebar-accent-foreground: 180 5% 96%;
-  --sidebar-ring: 168 100% 40%;
+  --sidebar: 220 30% 8%;
+  --sidebar-foreground: 200 12% 92%;
+  --sidebar-border: 186 85% 46% / 0.18;
+  --sidebar-primary: 186 85% 46%;
+  --sidebar-primary-foreground: 220 30% 9%;
+  --sidebar-accent: 220 25% 16%;
+  --sidebar-accent-foreground: 200 12% 96%;
+  --sidebar-ring: 186 85% 46%;
 
-  --popover: 226 45% 9%;
-  --popover-foreground: 180 5% 90%;
-  --popover-border: 168 100% 40% / 0.2;
+  --popover: 220 28% 11%;
+  --popover-foreground: 200 12% 92%;
+  --popover-border: 186 85% 46% / 0.2;
 
-  --primary: 168 100% 40%;
-  --primary-foreground: 226 45% 7%;
+  --primary: 186 85% 46%;
+  --primary-foreground: 220 30% 9%;
 
-  --secondary: 260 100% 65%;
+  --secondary: 258 90% 68%;
   --secondary-foreground: 0 0% 100%;
 
-  --muted: 226 30% 15%;
-  --muted-foreground: 226 20% 60%;
+  --muted: 220 22% 16%;
+  --muted-foreground: 220 15% 56%;
 
-  --accent: 168 100% 40% / 0.1;
-  --accent-foreground: 168 100% 40%;
+  --accent: 186 85% 46% / 0.1;
+  --accent-foreground: 186 85% 46%;
 
-  --destructive: 0 84% 60%;
+  --destructive: 4 80% 62%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 168 100% 40% / 0.3;
-  --ring: 168 100% 40%;
+  --input: 186 85% 46% / 0.18;
+  --ring: 186 85% 46%;
 
-  --chart-1: 168 100% 40%;
-  --chart-2: 260 100% 65%;
-  --chart-3: 190 100% 50%;
-  --chart-4: 320 100% 60%;
-  --chart-5: 45 100% 50%;
+  --chart-1: 186 85% 46%;
+  --chart-2: 258 90% 68%;
+  --chart-3: 162 70% 46%;
+  --chart-4: 30 90% 56%;
+  --chart-5: 340 85% 62%;
 
-  --shadow-2xs: 0px 0px 4px 0px rgba(0, 255, 204, 0.1);
-  --shadow-xs: 0px 0px 8px 0px rgba(0, 255, 204, 0.15);
-  --shadow-sm: 0px 0px 12px 0px rgba(0, 255, 204, 0.2);
-  --shadow: 0px 0px 16px 0px rgba(0, 255, 204, 0.25);
-  --shadow-md: 0px 0px 20px 0px rgba(0, 255, 204, 0.3);
-  --shadow-lg: 0px 0px 24px 0px rgba(0, 255, 204, 0.35);
-  --shadow-xl: 0px 0px 32px 0px rgba(0, 255, 204, 0.4);
-  --shadow-2xl: 0px 0px 40px 0px rgba(0, 255, 204, 0.5);
+  --shadow-2xs: 0 0 6px rgba(0,200,220,0.08);
+  --shadow-xs: 0 0 10px rgba(0,200,220,0.12);
+  --shadow-sm: 0 0 14px rgba(0,200,220,0.16);
+  --shadow: 0 0 18px rgba(0,200,220,0.20);
+  --shadow-md: 0 0 24px rgba(0,200,220,0.24);
+  --shadow-lg: 0 0 30px rgba(0,200,220,0.28);
+  --shadow-xl: 0 0 40px rgba(0,200,220,0.32);
+  --shadow-2xl: 0 0 56px rgba(0,200,220,0.40);
 }
 
+/* ────────────────────────────────────────────────────────────
+   BASE STYLES
+   ──────────────────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border;
@@ -213,44 +221,93 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans font-bold tracking-tight;
+    @apply font-sans font-semibold tracking-tight;
   }
 }
 
+/* ────────────────────────────────────────────────────────────
+   UTILITIES
+   ──────────────────────────────────────────────────────────── */
 @layer utilities {
   input[type="search"]::-webkit-search-cancel-button { @apply hidden; }
+
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);
     color: hsl(var(--muted-foreground));
     pointer-events: none;
   }
 
+  /* Light-mode glow text */
   .glow-text {
-    text-shadow: 0 0 10px rgba(0, 153, 184, 0.6), 0 0 20px rgba(0, 153, 184, 0.3);
+    text-shadow: 0 0 12px rgba(0, 157, 197, 0.45), 0 0 24px rgba(0, 157, 197, 0.20);
   }
 
   .dark .glow-text {
-    text-shadow: 0 0 10px rgba(0, 255, 204, 0.8), 0 0 20px rgba(0, 255, 204, 0.4);
+    text-shadow: 0 0 12px rgba(0, 214, 238, 0.70), 0 0 28px rgba(0, 214, 238, 0.35);
   }
 
+  /* Bordered glow card */
   .glow-border {
-    box-shadow: 0 0 10px rgba(0, 153, 184, 0.15), inset 0 0 10px rgba(0, 153, 184, 0.05);
-    border-color: rgba(0, 153, 184, 0.4);
+    box-shadow: 0 0 0 1px rgba(0,157,197,0.25), 0 2px 16px rgba(0,157,197,0.10);
+    border-color: rgba(0,157,197,0.35);
   }
-
   .glow-border:hover {
-    box-shadow: 0 0 15px rgba(0, 153, 184, 0.3), inset 0 0 15px rgba(0, 153, 184, 0.1);
-    border-color: rgba(0, 153, 184, 0.7);
+    box-shadow: 0 0 0 1px rgba(0,157,197,0.45), 0 4px 22px rgba(0,157,197,0.18);
+    border-color: rgba(0,157,197,0.60);
   }
-
   .dark .glow-border {
-    box-shadow: 0 0 10px rgba(0, 255, 204, 0.2), inset 0 0 10px rgba(0, 255, 204, 0.1);
-    border-color: rgba(0, 255, 204, 0.5);
+    box-shadow: 0 0 0 1px rgba(0,214,238,0.30), 0 2px 16px rgba(0,214,238,0.14);
+    border-color: rgba(0,214,238,0.40);
+  }
+  .dark .glow-border:hover {
+    box-shadow: 0 0 0 1px rgba(0,214,238,0.55), 0 4px 24px rgba(0,214,238,0.24);
+    border-color: rgba(0,214,238,0.65);
   }
 
-  .cyber-grid {
-    background-image: linear-gradient(rgba(0, 153, 184, 0.06) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(0, 153, 184, 0.06) 1px, transparent 1px);
-    background-size: 20px 20px;
+  /* Subtle mesh background */
+  .mesh-bg {
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(0,157,197,0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 80%, rgba(100,60,200,0.06) 0%, transparent 55%);
   }
+  .dark .mesh-bg {
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(0,214,238,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 80%, rgba(130,80,230,0.05) 0%, transparent 55%);
+  }
+
+  /* Pharma grid (subtle, light-compatible) */
+  .pharma-grid {
+    background-image:
+      linear-gradient(rgba(0,157,197,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,157,197,0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .dark .pharma-grid {
+    background-image:
+      linear-gradient(rgba(0,214,238,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,214,238,0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  /* Walking pulse animation */
+  @keyframes walking-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
+  }
+  .walking-pulse { animation: walking-pulse 1.6s ease-in-out infinite; }
+
+  /* Radar sweep animation */
+  @keyframes radar-sweep {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .radar-sweep { animation: radar-sweep 3s linear infinite; }
+
+  /* Live dot pulse */
+  @keyframes live-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+  .live-dot { animation: live-dot 1.2s ease-in-out infinite; }
 }
